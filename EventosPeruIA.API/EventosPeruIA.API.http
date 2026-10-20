@@ -1,0 +1,6 @@
+@host = http://localhost:5166
+
+GET {{host}}/api/Categoria
+
+###
+GET {{host}}/api/Evento?pagina=1

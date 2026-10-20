@@ -1,0 +1,1728 @@
+{
+  "info": {
+    "_postman_id": "d6c6d32c-8707-44d6-a4b2-1ef8b90177b5",
+    "name": "EventosPeruIA API (40%)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "0. Login (guarda el token)",
+      "item": [
+        {
+          "name": "Login Asistente (María)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/Usuario/login",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Usuario",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"maria.quispe@gmail.com\",\n  \"password\": \"Prueba123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const r = pm.response.json();",
+                  "if (r.datos && r.datos.token) pm.collectionVariables.set('tokenAsistente', r.datos.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Organizador (Carlos)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/Usuario/login",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Usuario",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"carlos.mendoza@gmail.com\",\n  \"password\": \"Prueba123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const r = pm.response.json();",
+                  "if (r.datos && r.datos.token) pm.collectionVariables.set('tokenOrganizador', r.datos.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Administrador",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/Usuario/login",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Usuario",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"admin@eventosperu.pe\",\n  \"password\": \"Prueba123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const r = pm.response.json();",
+                  "if (r.datos && r.datos.token) pm.collectionVariables.set('tokenAdmin', r.datos.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login suspendido (debe fallar 403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/Usuario/login",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Usuario",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"pedro.salazar@gmail.com\",\n  \"password\": \"Prueba123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Login incorrecto (debe fallar 401)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/Usuario/login",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Usuario",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"maria.quispe@gmail.com\",\n  \"password\": \"Otra123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "US-01 Registro",
+      "item": [
+        {
+          "name": "Registro comprador",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/Usuario/registro",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Usuario",
+                "registro"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"perfil\": \"Comprar\",\n  \"nombre\": \"Laura\",\n  \"apellido\": \"Gómez\",\n  \"correo\": \"laura.gomez@gmail.com\",\n  \"celular\": \"912345678\",\n  \"fechaNacimiento\": \"2001-06-15\",\n  \"departamento\": \"Lima\",\n  \"distrito\": \"Miraflores\",\n  \"password\": \"Laura2026\",\n  \"confirmarPassword\": \"Laura2026\",\n  \"aceptaTerminos\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Registro organizador",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/Usuario/registro",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Usuario",
+                "registro"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"perfil\": \"Ambas\",\n  \"nombre\": \"Diego\",\n  \"apellido\": \"Vargas\",\n  \"correo\": \"diego.vargas@gmail.com\",\n  \"celular\": \"998877665\",\n  \"fechaNacimiento\": \"1990-03-20\",\n  \"departamento\": \"Lima\",\n  \"distrito\": \"Surco\",\n  \"password\": \"Diego2026\",\n  \"confirmarPassword\": \"Diego2026\",\n  \"nombreOrganizador\": \"Vargas Eventos\",\n  \"aceptaTerminos\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Registro con errores (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/Usuario/registro",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Usuario",
+                "registro"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"perfil\": \"Comprar\",\n  \"nombre\": \"L4\",\n  \"apellido\": \"\",\n  \"correo\": \"correo-malo\",\n  \"celular\": \"812\",\n  \"fechaNacimiento\": \"2015-01-01\",\n  \"departamento\": \"Lima\",\n  \"distrito\": \"Lince\",\n  \"password\": \"abc\",\n  \"confirmarPassword\": \"xyz\",\n  \"aceptaTerminos\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Perfil",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/Usuario/perfil",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Usuario",
+                "perfil"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAsistente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Activar organizador",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/Usuario/activar-organizador",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Usuario",
+                "activar-organizador"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreOrganizador\": \"María Eventos\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAsistente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "US-04 Categorías",
+      "item": [
+        {
+          "name": "Categorías activas (público)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/Categoria",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Categoria"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Categorías admin",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/Categoria/admin",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Categoria",
+                "admin"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Nueva categoría",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/Categoria",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Categoria"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Teatro\",\n  \"descripcion\": \"Obras y presentaciones teatrales\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Editar categoría",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/Categoria/5",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Categoria",
+                "5"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Teatro y danza\",\n  \"descripcion\": \"Obras de teatro y espectáculos de danza\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Desactivar (pide confirmación)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/Categoria/5/desactivar",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Categoria",
+                "5",
+                "desactivar"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Desactivar confirmado",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/Categoria/5/desactivar?confirmar=true",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Categoria",
+                "5",
+                "desactivar"
+              ],
+              "query": [
+                {
+                  "key": "confirmar",
+                  "value": "true"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reactivar",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/Categoria/5/reactivar",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Categoria",
+                "5",
+                "reactivar"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Sin permiso (403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/Categoria",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Categoria"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Prueba\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAsistente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "US-02 / US-03 / US-07 Eventos (público)",
+      "item": [
+        {
+          "name": "Buscar todos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/Evento?pagina=1",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Evento"
+              ],
+              "query": [
+                {
+                  "key": "pagina",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Buscar por palabra (sin tildes)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/Evento?palabra=gastronomica",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Evento"
+              ],
+              "query": [
+                {
+                  "key": "palabra",
+                  "value": "gastronomica"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Buscar con filtros",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/Evento?idCategoria=1&desde=2026-11-01&hasta=2026-11-30&departamento=Lima",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Evento"
+              ],
+              "query": [
+                {
+                  "key": "idCategoria",
+                  "value": "1"
+                },
+                {
+                  "key": "desde",
+                  "value": "2026-11-01"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2026-11-30"
+                },
+                {
+                  "key": "departamento",
+                  "value": "Lima"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Fechas inválidas (400)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/Evento?desde=2026-12-01&hasta=2026-11-01",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Evento"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2026-12-01"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2026-11-01"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Detalle disponible",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/Evento/1",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Evento",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Detalle con sesión (Ya tienes N entradas)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/Evento/1",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Evento",
+                "1"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAsistente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Detalle finalizado con reseñas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/Evento/5",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Evento",
+                "5"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Detalle cancelado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/Evento/6",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Evento",
+                "6"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Detalle suspendido (404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/Evento/8",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Evento",
+                "8"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Detalle agotado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/Evento/9",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Evento",
+                "9"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Disponibilidad (cupos)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/Evento/1/disponibilidad",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Evento",
+                "1",
+                "disponibilidad"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "US-09 Publicación y edición",
+      "item": [
+        {
+          "name": "Mis eventos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/Evento/mis-eventos",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Evento",
+                "mis-eventos"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenOrganizador}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear y publicar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/Evento",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Evento"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Concierto Acústico de Verano\",\n  \"descripcion\": \"Una noche de música acústica con artistas locales y zona de comida.\",\n  \"idCategoria\": 1,\n  \"fechaHoraInicio\": \"2026-12-20T19:00:00\",\n  \"fechaHoraFin\": \"2026-12-20T22:00:00\",\n  \"departamento\": \"Lima\",\n  \"distrito\": \"Barranco\",\n  \"direccion\": \"Av. Grau 270\",\n  \"aforoMaximo\": 120,\n  \"precio\": 40,\n  \"imagenUrl\": null,\n  \"publicar\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenOrganizador}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Guardar borrador",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/Evento",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Evento"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Taller de Guitarra\",\n  \"descripcion\": \"Taller para aprender acordes básicos de guitarra en dos horas.\",\n  \"idCategoria\": 2,\n  \"fechaHoraInicio\": \"2026-12-15T10:00:00\",\n  \"fechaHoraFin\": \"2026-12-15T12:00:00\",\n  \"departamento\": \"Lima\",\n  \"distrito\": \"Lince\",\n  \"direccion\": \"Av. Arequipa 2450\",\n  \"aforoMaximo\": 15,\n  \"precio\": 30,\n  \"publicar\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenOrganizador}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Editar: bajar aforo bajo lo vendido (400)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/Evento/1",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Evento",
+                "1"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Noche de Rock en Barranco\",\n  \"descripcion\": \"Concierto con tres bandas de rock nacional en vivo. Incluye zona de comida y bebidas.\",\n  \"idCategoria\": 1,\n  \"fechaHoraInicio\": \"2026-11-14T20:00:00\",\n  \"fechaHoraFin\": \"2026-11-14T23:30:00\",\n  \"departamento\": \"Lima\",\n  \"distrito\": \"Barranco\",\n  \"direccion\": \"Av. Pedro de Osma 135\",\n  \"aforoMaximo\": 5,\n  \"precio\": 60,\n  \"confirmarCambios\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenOrganizador}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Editar: cambio de fecha sin confirmar (409)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/Evento/1",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Evento",
+                "1"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Noche de Rock en Barranco\",\n  \"descripcion\": \"Concierto con tres bandas de rock nacional en vivo. Incluye zona de comida y bebidas.\",\n  \"idCategoria\": 1,\n  \"fechaHoraInicio\": \"2026-11-14T21:00:00\",\n  \"fechaHoraFin\": \"2026-11-15T00:30:00\",\n  \"departamento\": \"Lima\",\n  \"distrito\": \"Barranco\",\n  \"direccion\": \"Av. Pedro de Osma 135\",\n  \"aforoMaximo\": 200,\n  \"precio\": 60,\n  \"confirmarCambios\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenOrganizador}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Editar: cambio de fecha confirmado",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/Evento/1",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Evento",
+                "1"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Noche de Rock en Barranco\",\n  \"descripcion\": \"Concierto con tres bandas de rock nacional en vivo. Incluye zona de comida y bebidas.\",\n  \"idCategoria\": 1,\n  \"fechaHoraInicio\": \"2026-11-14T21:00:00\",\n  \"fechaHoraFin\": \"2026-11-15T00:30:00\",\n  \"departamento\": \"Lima\",\n  \"distrito\": \"Barranco\",\n  \"direccion\": \"Av. Pedro de Osma 135\",\n  \"aforoMaximo\": 200,\n  \"precio\": 60,\n  \"confirmarCambios\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenOrganizador}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Editar evento cancelado (400)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/Evento/6",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Evento",
+                "6"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Festival de Salsa Lima 2026\",\n  \"descripcion\": \"Festival con orquestas de salsa nacionales e internacionales.\",\n  \"idCategoria\": 1,\n  \"fechaHoraInicio\": \"2026-12-05T18:00:00\",\n  \"fechaHoraFin\": \"2026-12-05T23:59:00\",\n  \"departamento\": \"Lima\",\n  \"distrito\": \"San Isidro\",\n  \"direccion\": \"Av. Rivera Navarrete 800\",\n  \"aforoMaximo\": 300,\n  \"precio\": 70\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenOrganizador}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Publicar borrador",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/Evento/10/publicar",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Evento",
+                "10",
+                "publicar"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenOrganizador}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Usa el Id del borrador creado."
+          }
+        },
+        {
+          "name": "Eliminar borrador",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/Evento/11",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Evento",
+                "11"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenOrganizador}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Usa el Id de un borrador."
+          }
+        }
+      ]
+    },
+    {
+      "name": "US-06 Compra de entradas",
+      "item": [
+        {
+          "name": "Comprar (idempotente: envíalo 2 veces)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Genera un código nuevo solo si no existe. Para una compra nueva, borra la variable codigoOperacion.",
+                  " if (!pm.collectionVariables.get('codigoOperacion')) pm.collectionVariables.set('codigoOperacion', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/Compra",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Compra"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigoOperacion\": \"{{codigoOperacion}}\",\n  \"idEvento\": 2,\n  \"cantidad\": 2,\n  \"titularTarjeta\": \"Maria Quispe\",\n  \"numeroTarjeta\": \"4111111111114521\",\n  \"vencimiento\": \"12/28\",\n  \"cvv\": \"123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAsistente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Comprar evento gratis",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/Compra",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Compra"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigoOperacion\": \"{{$guid}}\",\n  \"idEvento\": 3,\n  \"cantidad\": 3\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAsistente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Pago rechazado (tarjeta 0000)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/Compra",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Compra"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigoOperacion\": \"{{$guid}}\",\n  \"idEvento\": 2,\n  \"cantidad\": 1,\n  \"titularTarjeta\": \"Maria Quispe\",\n  \"numeroTarjeta\": \"4111111111110000\",\n  \"vencimiento\": \"12/28\",\n  \"cvv\": \"123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAsistente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Evento agotado (409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/Compra",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Compra"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigoOperacion\": \"{{$guid}}\",\n  \"idEvento\": 9,\n  \"cantidad\": 1,\n  \"titularTarjeta\": \"Maria Quispe\",\n  \"numeroTarjeta\": \"4111111111114521\",\n  \"vencimiento\": \"12/28\",\n  \"cvv\": \"123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAsistente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Más de 10 entradas (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/Compra",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Compra"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigoOperacion\": \"{{$guid}}\",\n  \"idEvento\": 1,\n  \"cantidad\": 11\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAsistente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Comprar evento propio (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/Compra",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Compra"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigoOperacion\": \"{{$guid}}\",\n  \"idEvento\": 1,\n  \"cantidad\": 1,\n  \"titularTarjeta\": \"Carlos Mendoza\",\n  \"numeroTarjeta\": \"4111111111112222\",\n  \"vencimiento\": \"12/28\",\n  \"cvv\": \"123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenOrganizador}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mis entradas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/Compra/mis-entradas",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Compra",
+                "mis-entradas"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAsistente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Ver compra",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/Compra/4",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "Compra",
+                "4"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAsistente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "US-10 Check-in",
+      "item": [
+        {
+          "name": "Eventos del día",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/CheckIn/eventos",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "CheckIn",
+                "eventos"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenOrganizador}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Validar entrada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/CheckIn/validar",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "CheckIn",
+                "validar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idEvento\": 1,\n  \"codigo\": \"PEGA-AQUI-EL-CODIGO-DE-MIS-ENTRADAS\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenOrganizador}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Funciona solo desde 3 h antes del inicio hasta el fin del evento. Para probar hoy, crea un evento que empiece en unas horas."
+          }
+        },
+        {
+          "name": "Código no válido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/CheckIn/validar",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "CheckIn",
+                "validar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idEvento\": 1,\n  \"codigo\": \"123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenOrganizador}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Resumen (contador)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/CheckIn/1/resumen",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "CheckIn",
+                "1",
+                "resumen"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenOrganizador}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "host",
+      "value": "http://localhost:5166"
+    },
+    {
+      "key": "tokenAsistente",
+      "value": ""
+    },
+    {
+      "key": "tokenOrganizador",
+      "value": ""
+    },
+    {
+      "key": "tokenAdmin",
+      "value": ""
+    },
+    {
+      "key": "codigoOperacion",
+      "value": ""
+    }
+  ]
+}
