@@ -9,7 +9,7 @@ namespace EventosPeruIA.CORE.Core.DTOs
         public string? Descripcion { get; set; }
     }
 
-    // Vista del administrador (US-04)
+    // Vista del administrador (US-13)
     public class CategoriaAdminDTO : CategoriaListDTO
     {
         public string Estado { get; set; } = string.Empty;   // Activa / Inactiva

@@ -4,7 +4,7 @@ using EventosPeruIA.CORE.Core.Interfaces;
 
 namespace EventosPeruIA.CORE.Core.Services
 {
-    // US-04 Gestión de categorías de eventos
+    // US-13 Gestión de categorías de eventos
     public class CategoriaService : ICategoriaService
     {
         private readonly ICategoriaRepository _categoriaRepository;

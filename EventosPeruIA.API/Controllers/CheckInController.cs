@@ -6,7 +6,7 @@ using EventosPeruIA.CORE.Core.Settings;
 
 namespace EventosPeruIA.API.Controllers
 {
-    // US-10 Validación de entradas (check-in)
+    // US-07 Validación de entradas (check-in)
     [Route("api/[controller]")]
     [Authorize(Roles = Roles.Organizador)]
     public class CheckInController : BaseApiController

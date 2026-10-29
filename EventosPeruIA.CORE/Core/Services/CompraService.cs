@@ -13,12 +13,15 @@ namespace EventosPeruIA.CORE.Core.Services
         private readonly ICompraRepository _compraRepository;
         private readonly IEventoRepository _eventoRepository;
         private readonly EventosPeruIAContext _dbContext;
+        private readonly INotificacionService _notificacionService;
 
-        public CompraService(ICompraRepository compraRepository, IEventoRepository eventoRepository, EventosPeruIAContext dbContext)
+        public CompraService(ICompraRepository compraRepository, IEventoRepository eventoRepository,
+                             EventosPeruIAContext dbContext, INotificacionService notificacionService)
         {
             _compraRepository = compraRepository;
             _eventoRepository = eventoRepository;
             _dbContext = dbContext;
+            _notificacionService = notificacionService;
         }
 
         public async Task<ResultadoDTO<CompraResultadoDTO>> ComprarEntradas(int idUsuario, CompraCreateDTO dto)
@@ -118,6 +121,20 @@ namespace EventosPeruIA.CORE.Core.Services
 
             var guardada = await _compraRepository.GetCompraById(compra.IdCompra);
             var resultado = Mapear(guardada!);
+
+            // US-15: confirmación de compra y, si se acabaron los cupos, aviso al organizador.
+            // Si falla un aviso, la compra igual queda registrada.
+            try
+            {
+                await _notificacionService.NotificarCompra(idUsuario, evento, dto.Cantidad, resultado.NumeroCompra);
+                await _dbContext.Entry(evento).ReloadAsync();   // trae los cupos actualizados
+                if (evento.EntradasVendidas >= evento.AforoMaximo)
+                    await _notificacionService.NotificarAgotado(evento);
+            }
+            catch (Exception)
+            {
+            }
+
             return ResultadoDTO<CompraResultadoDTO>.Ok(resultado,
                 $"Compra realizada con éxito. N° de compra: {resultado.NumeroCompra}", 201);
         }

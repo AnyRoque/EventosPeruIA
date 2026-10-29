@@ -5,6 +5,7 @@ using EventosPeruIA.CORE.Core.Services;
 using EventosPeruIA.CORE.Infrastructure.Data;
 using EventosPeruIA.CORE.Infrastructure.Repositories;
 using EventosPeruIA.CORE.Infrastructure.Shared;
+using EventosPeruIA.API.Workers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,21 +13,25 @@ var _config = builder.Configuration;
 var cnx = _config.GetConnectionString("DevConnection");
 builder.Services.AddDbContext<EventosPeruIAContext>(options => options.UseSqlServer(cnx));
 
-// US-01 / US-05 Usuarios
+// US-01 / US-02 Usuarios
 builder.Services.AddTransient<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddTransient<IUsuarioService, UsuarioService>();
-// US-04 Categorías
+// US-13 Categorías
 builder.Services.AddTransient<ICategoriaRepository, CategoriaRepository>();
 builder.Services.AddTransient<ICategoriaService, CategoriaService>();
-// US-02 / US-03 / US-07 / US-09 Eventos
+// US-05 / US-09 / US-10 / US-03 Eventos
 builder.Services.AddTransient<IEventoRepository, EventoRepository>();
 builder.Services.AddTransient<IEventoService, EventoService>();
 // US-06 Compras
 builder.Services.AddTransient<ICompraRepository, CompraRepository>();
 builder.Services.AddTransient<ICompraService, CompraService>();
-// US-10 Check-in
+// US-07 Check-in
 builder.Services.AddTransient<ICheckInRepository, CheckInRepository>();
 builder.Services.AddTransient<ICheckInService, CheckInService>();
+// US-15 Notificaciones (+ recordatorio automático 24 h antes)
+builder.Services.AddTransient<INotificacionRepository, NotificacionRepository>();
+builder.Services.AddTransient<INotificacionService, NotificacionService>();
+builder.Services.AddHostedService<RecordatorioWorker>();
 
 // JWT
 builder.Services.AddSharedInfrastructure(_config);

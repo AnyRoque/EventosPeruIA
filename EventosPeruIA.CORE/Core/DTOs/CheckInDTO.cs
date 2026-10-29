@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace EventosPeruIA.CORE.Core.DTOs
 {
-    // US-10 Validación de entradas (check-in)
+    // US-07 Validación de entradas (check-in)
     public class CheckInRequestDTO
     {
         [Range(1, int.MaxValue, ErrorMessage = "Selecciona el evento.")]

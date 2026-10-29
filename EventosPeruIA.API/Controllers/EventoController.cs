@@ -16,7 +16,7 @@ namespace EventosPeruIA.API.Controllers
             _eventoService = eventoService;
         }
 
-        // US-02 Búsqueda y filtrado (público)
+        // US-05 Búsqueda y filtrado (público)
         // GET api/Evento?palabra=rock&idCategoria=1&desde=2026-11-01&hasta=2026-11-30&departamento=Lima&distrito=Barranco&pagina=1
         [HttpGet]
         public async Task<IActionResult> BuscarEventos([FromQuery] EventoFiltroDTO filtro)
@@ -24,21 +24,21 @@ namespace EventosPeruIA.API.Controllers
             return Responder(await _eventoService.BuscarEventos(filtro));
         }
 
-        // US-03 Detalle del evento (público; si hay sesión, muestra "Ya tienes N entradas" / "Es tu evento")
+        // US-09 Detalle del evento (público; si hay sesión, muestra "Ya tienes N entradas" / "Es tu evento")
         [HttpGet("{id}")]
         public async Task<IActionResult> GetDetalle(int id)
         {
             return Responder(await _eventoService.GetDetalle(id, UsuarioIdActual));
         }
 
-        // US-07 Cupos disponibles (el frontend lo consulta cada pocos segundos)
+        // US-10 Cupos disponibles (el frontend lo consulta cada pocos segundos)
         [HttpGet("{id}/disponibilidad")]
         public async Task<IActionResult> GetDisponibilidad(int id)
         {
             return Responder(await _eventoService.GetDisponibilidad(id));
         }
 
-        // US-09 Mis eventos
+        // US-03 Mis eventos
         [Authorize(Roles = Roles.Organizador)]
         [HttpGet("mis-eventos")]
         public async Task<IActionResult> GetMisEventos()
@@ -47,7 +47,7 @@ namespace EventosPeruIA.API.Controllers
             return Ok(eventos);
         }
 
-        // US-09 Crear evento (publicar = true) o guardar borrador (publicar = false)
+        // US-03 Crear evento (publicar = true) o guardar borrador (publicar = false)
         [Authorize(Roles = Roles.Organizador)]
         [HttpPost]
         public async Task<IActionResult> CreateEvento([FromBody] EventoCreateDTO dto)
@@ -55,7 +55,7 @@ namespace EventosPeruIA.API.Controllers
             return Responder(await _eventoService.CreateEvento(UsuarioIdActual!.Value, dto));
         }
 
-        // US-09 Editar evento (incluye las restricciones de aforo de US-07)
+        // US-03 Editar evento (incluye las restricciones de aforo de US-10)
         [Authorize(Roles = Roles.Organizador)]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateEvento(int id, [FromBody] EventoUpdateDTO dto)
@@ -63,7 +63,7 @@ namespace EventosPeruIA.API.Controllers
             return Responder(await _eventoService.UpdateEvento(UsuarioIdActual!.Value, id, dto));
         }
 
-        // US-09 Publicar un borrador
+        // US-03 Publicar un borrador
         [Authorize(Roles = Roles.Organizador)]
         [HttpPatch("{id}/publicar")]
         public async Task<IActionResult> PublicarEvento(int id)
@@ -71,7 +71,7 @@ namespace EventosPeruIA.API.Controllers
             return Responder(await _eventoService.PublicarEvento(UsuarioIdActual!.Value, id));
         }
 
-        // US-09 Eliminar un borrador
+        // US-03 Eliminar un borrador
         [Authorize(Roles = Roles.Organizador)]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteEvento(int id)

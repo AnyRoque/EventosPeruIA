@@ -23,7 +23,7 @@ namespace EventosPeruIA.API.Controllers
             return Responder(resultado);
         }
 
-        // US-05 Inicio de sesión
+        // US-02 Inicio de sesión
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequestDTO dto)
         {

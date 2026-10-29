@@ -67,7 +67,7 @@ namespace EventosPeruIA.CORE.Core.Services
             return ResultadoDTO<object>.Ok(null, "Cuenta creada correctamente.", 201);
         }
 
-        // US-05 Inicio de sesión
+        // US-02 Inicio de sesión
         public async Task<ResultadoDTO<LoginResponseDTO>> Login(LoginRequestDTO dto)
         {
             var usuario = await _usuarioRepository.GetUsuarioByCorreo(dto.Correo.Trim().ToLower());

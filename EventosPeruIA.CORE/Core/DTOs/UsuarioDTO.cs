@@ -55,7 +55,7 @@ namespace EventosPeruIA.CORE.Core.DTOs
         public bool AceptaTerminos { get; set; }
     }
 
-    // US-05 Inicio de sesión
+    // US-02 Inicio de sesión
     public class LoginRequestDTO
     {
         [Required(ErrorMessage = "El correo es obligatorio.")]
