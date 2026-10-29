@@ -16,7 +16,7 @@ namespace EventosPeruIA.CORE.Infrastructure.Repositories
             _dbContext = dbContext;
         }
 
-        // US-02: solo eventos publicados que aún no terminan
+        // US-05: solo eventos publicados que aún no terminan
         public async Task<(IEnumerable<Evento> Eventos, int Total)> BuscarEventos(EventoFiltroDTO filtro, int tamanoPagina)
         {
             var ahora = DateTime.Now;
@@ -135,7 +135,7 @@ namespace EventosPeruIA.CORE.Infrastructure.Repositories
             await _dbContext.SaveChangesAsync();
         }
 
-        // Control de aforo (US-06 / US-07): descuenta los cupos en una sola operación
+        // Control de aforo (US-06 / US-10): descuenta los cupos en una sola operación
         // en la base de datos, solo si todavía alcanzan. Si dos personas compran los
         // últimos cupos al mismo tiempo, solo una lo logra (devuelve true).
         public async Task<bool> DescontarCupos(int idEvento, int cantidad)

@@ -7,7 +7,7 @@ using EventosPeruIA.CORE.Infrastructure.Data;
 
 namespace EventosPeruIA.CORE.Core.Services
 {
-    // US-10 Validación de entradas (check-in) el día del evento
+    // US-07 Validación de entradas (check-in) el día del evento
     public class CheckInService : ICheckInService
     {
         private const int HorasAntesDelInicio = 3;

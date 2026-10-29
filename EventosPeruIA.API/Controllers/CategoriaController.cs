@@ -6,7 +6,7 @@ using EventosPeruIA.CORE.Core.Settings;
 
 namespace EventosPeruIA.API.Controllers
 {
-    // US-04 Gestión de categorías de eventos
+    // US-13 Gestión de categorías de eventos
     [Route("api/[controller]")]
     public class CategoriaController : BaseApiController
     {

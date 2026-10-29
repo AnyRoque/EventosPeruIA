@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace EventosPeruIA.CORE.Core.DTOs
 {
-    // US-02 Búsqueda y filtrado (parámetros de la URL)
+    // US-05 Búsqueda y filtrado (parámetros de la URL)
     public class EventoFiltroDTO
     {
         [StringLength(100, MinimumLength = 3, ErrorMessage = "La palabra clave debe tener mínimo 3 caracteres.")]
@@ -33,7 +33,7 @@ namespace EventosPeruIA.CORE.Core.DTOs
         public string? ImagenUrl { get; set; }
     }
 
-    // US-03 Detalle del evento
+    // US-09 Detalle del evento
     public class EventoDetalleDTO
     {
         public int IdEvento { get; set; }
@@ -77,7 +77,7 @@ namespace EventosPeruIA.CORE.Core.DTOs
         public DateTime FechaPublicacion { get; set; }
     }
 
-    // US-09 Publicación y edición de eventos
+    // US-03 Publicación y edición de eventos
     public class EventoCreateDTO
     {
         [Required(ErrorMessage = "El nombre es obligatorio.")]
@@ -143,7 +143,7 @@ namespace EventosPeruIA.CORE.Core.DTOs
         public bool PuedeCancelar { get; set; }
     }
 
-    // US-07: cupos del evento (se consulta cada pocos segundos desde el frontend)
+    // US-10: cupos del evento (se consulta cada pocos segundos desde el frontend)
     public class DisponibilidadDTO
     {
         public int IdEvento { get; set; }

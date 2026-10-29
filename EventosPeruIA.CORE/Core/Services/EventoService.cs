@@ -12,14 +12,16 @@ namespace EventosPeruIA.CORE.Core.Services
 
         private readonly IEventoRepository _eventoRepository;
         private readonly ICategoriaRepository _categoriaRepository;
+        private readonly INotificacionService _notificacionService;
 
-        public EventoService(IEventoRepository eventoRepository, ICategoriaRepository categoriaRepository)
+        public EventoService(IEventoRepository eventoRepository, ICategoriaRepository categoriaRepository, INotificacionService notificacionService)
         {
             _eventoRepository = eventoRepository;
             _categoriaRepository = categoriaRepository;
+            _notificacionService = notificacionService;
         }
 
-        // ===================== US-02 Búsqueda y filtrado =====================
+        // ===================== US-05 Búsqueda y filtrado =====================
         public async Task<ResultadoDTO<PaginaDTO<EventoListDTO>>> BuscarEventos(EventoFiltroDTO filtro)
         {
             if (filtro.Desde.HasValue && filtro.Hasta.HasValue && filtro.Hasta.Value.Date < filtro.Desde.Value.Date)
@@ -53,7 +55,7 @@ namespace EventosPeruIA.CORE.Core.Services
             return ResultadoDTO<PaginaDTO<EventoListDTO>>.Ok(pagina, mensaje);
         }
 
-        // ===================== US-03 Detalle del evento =====================
+        // ===================== US-09 Detalle del evento =====================
         public async Task<ResultadoDTO<EventoDetalleDTO>> GetDetalle(int idEvento, int? idUsuario)
         {
             var evento = await _eventoRepository.GetEventoConResenas(idEvento);
@@ -70,7 +72,7 @@ namespace EventosPeruIA.CORE.Core.Services
             if (idUsuario.HasValue && !esMiEvento)
             {
                 detalle.MisEntradas = await _eventoRepository.ContarEntradasUsuario(idEvento, idUsuario.Value);
-                await _eventoRepository.RegistrarVisita(idEvento, idUsuario.Value); // señal para US-14
+                await _eventoRepository.RegistrarVisita(idEvento, idUsuario.Value); // señal para US-08
             }
 
             // Qué se muestra en lugar del botón "Comprar"
@@ -110,7 +112,7 @@ namespace EventosPeruIA.CORE.Core.Services
             return ResultadoDTO<EventoDetalleDTO>.Ok(detalle);
         }
 
-        // ===================== US-07 Disponibilidad (cupos) =====================
+        // ===================== US-10 Disponibilidad (cupos) =====================
         public async Task<ResultadoDTO<DisponibilidadDTO>> GetDisponibilidad(int idEvento)
         {
             var evento = await _eventoRepository.GetEventoById(idEvento);
@@ -129,7 +131,7 @@ namespace EventosPeruIA.CORE.Core.Services
             });
         }
 
-        // ===================== US-09 Publicación y edición =====================
+        // ===================== US-03 Publicación y edición =====================
         public async Task<IEnumerable<MiEventoDTO>> GetMisEventos(int idOrganizador)
         {
             var ahora = DateTime.Now;
@@ -185,7 +187,7 @@ namespace EventosPeruIA.CORE.Core.Services
             var error = await ValidarDatos(dto, evento.IdCategoria);
             if (error != null) return ResultadoDTO<EventoDetalleDTO>.Error(400, error);
 
-            // Restricción de aforo (US-07): nunca por debajo de lo vendido
+            // Restricción de aforo (US-10): nunca por debajo de lo vendido
             if (dto.AforoMaximo < evento.EntradasVendidas)
                 return ResultadoDTO<EventoDetalleDTO>.Error(400,
                     $"El aforo no puede ser menor a las {evento.EntradasVendidas} entradas ya vendidas.");
@@ -204,6 +206,10 @@ namespace EventosPeruIA.CORE.Core.Services
                     $"Se notificará a {compradores} compradores. Vuelve a enviar con confirmarCambios=true para guardar.");
             }
 
+            // Datos anteriores para el aviso de cambio (US-15)
+            var inicioAnterior = evento.FechaHoraInicio;
+            var lugarAnterior = NotificacionService.Lugar(evento);
+
             // El precio nuevo solo aplica a compras nuevas: cada compra guarda el precio que se pagó.
             CopiarDatos(dto, evento);
             evento.FechaModificacion = DateTime.Now;
@@ -219,7 +225,9 @@ namespace EventosPeruIA.CORE.Core.Services
                     "El aforo no puede ser menor a las entradas ya vendidas. Actualiza la página e inténtalo nuevamente.");
             }
 
-            // TODO US-12: notificar a los compradores cuando cambia la programación
+            // US-15: avisar a los compradores el cambio de fecha, hora o lugar
+            if (cambiaProgramacion && evento.EntradasVendidas > 0 && evento.Estado == EstadosEvento.Publicado)
+                await _notificacionService.NotificarCambioProgramacion(evento, inicioAnterior, lugarAnterior);
 
             var actualizado = await _eventoRepository.GetEventoById(idEvento);
             return ResultadoDTO<EventoDetalleDTO>.Ok(MapearDetalle(actualizado!), "Evento actualizado correctamente.");
@@ -244,7 +252,7 @@ namespace EventosPeruIA.CORE.Core.Services
             return ResultadoDTO<EventoDetalleDTO>.Ok(MapearDetalle(evento), "Evento publicado correctamente.");
         }
 
-        // Un borrador se puede eliminar; un evento publicado solo se puede cancelar (US-13)
+        // Un borrador se puede eliminar; un evento publicado solo se puede cancelar (US-04)
         public async Task<ResultadoDTO<object>> DeleteEvento(int idOrganizador, int idEvento)
         {
             var evento = await _eventoRepository.GetEventoById(idEvento);
