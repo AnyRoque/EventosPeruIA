@@ -233,6 +233,31 @@ namespace EventosPeruIA.CORE.Core.Services
             return ResultadoDTO<EventoDetalleDTO>.Ok(MapearDetalle(actualizado!), "Evento actualizado correctamente.");
         }
 
+        public async Task<ResultadoDTO<bool>> CancelarEvento(int idOrganizador, int idEvento, CancelarEventoDTO dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Motivo))
+                return ResultadoDTO<bool>.Error(400, "El motivo de cancelación es obligatorio.");
+
+            var evento = await _eventoRepository.GetEventoById(idEvento);
+            if (evento == null)
+                return ResultadoDTO<bool>.Error(404, "El evento especificado no existe.");
+
+            if (evento.IdOrganizador != idOrganizador)
+                return ResultadoDTO<bool>.Error(403, "No tienes permisos para cancelar este evento.");
+
+            if (evento.Estado == EstadosEvento.Cancelado)
+                return ResultadoDTO<bool>.Error(400, "El evento ya se encuentra cancelado.");
+
+            if (evento.FechaHoraFin <= DateTime.Now)
+                return ResultadoDTO<bool>.Error(400, "No es posible cancelar un evento que ya ha finalizado.");
+
+            var exito = await _eventoRepository.CancelarEvento(idEvento, idOrganizador, dto.Motivo);
+            if (!exito)
+                return ResultadoDTO<bool>.Error(500, "Ocurrió un error al procesar la cancelación del evento.");
+
+            return ResultadoDTO<bool>.Ok(true, "El evento ha sido cancelado exitosamente.");
+        }
+
         public async Task<ResultadoDTO<EventoDetalleDTO>> PublicarEvento(int idOrganizador, int idEvento)
         {
             var evento = await _eventoRepository.GetEventoById(idEvento);

@@ -106,6 +106,22 @@ namespace EventosPeruIA.CORE.Infrastructure.Repositories
             return rows > 0;
         }
 
+        public async Task<bool> CancelarEvento(int idEvento, int idOrganizador, string motivo)
+        {
+            var evento = await _dbContext.Evento
+                .FirstOrDefaultAsync(e => e.IdEvento == idEvento && e.IdOrganizador == idOrganizador);
+
+            if (evento == null) return false;
+
+            evento.Estado = EstadosEvento.Cancelado;
+            evento.MotivoCancelacion = motivo;
+            evento.FechaCancelacion = DateTime.Now;
+            evento.FechaModificacion = DateTime.Now;
+
+            await _dbContext.SaveChangesAsync();
+            return true;
+        }
+
         // Compradores con entradas vigentes (para avisar cambios)
         public async Task<int> ContarCompradores(int idEvento)
         {

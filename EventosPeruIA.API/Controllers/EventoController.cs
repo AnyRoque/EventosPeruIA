@@ -71,6 +71,14 @@ namespace EventosPeruIA.API.Controllers
             return Responder(await _eventoService.PublicarEvento(UsuarioIdActual!.Value, id));
         }
 
+        [Authorize(Roles = Roles.Organizador)]
+        [HttpPost("{idEvento}/cancelar")]
+        public async Task<IActionResult> CancelarEvento(int idEvento, [FromBody] CancelarEventoDTO dto)
+        {
+            var resultado = await _eventoService.CancelarEvento(UsuarioIdActual!.Value, idEvento, dto);
+            return StatusCode(resultado.Codigo, resultado);
+        }
+
         // US-03 Eliminar un borrador
         [Authorize(Roles = Roles.Organizador)]
         [HttpDelete("{id}")]
