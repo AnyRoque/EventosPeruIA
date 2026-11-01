@@ -38,6 +38,20 @@ namespace EventosPeruIA.API.Controllers
             return Responder(await _eventoService.GetDisponibilidad(id));
         }
 
+        [HttpPost("{idEvento}/resenas")]
+        [Authorize]
+        public async Task<IActionResult> RegistrarResena(int idEvento, [FromBody] CrearResenaDTO dto)
+        {
+            return Responder(await _eventoService.RegistrarResena(UsuarioIdActual!.Value, idEvento, dto));
+        }
+
+        [HttpGet("{idEvento}/resenas")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ObtenerResenas(int idEvento)
+        {
+            return Responder(await _eventoService.ObtenerResenasEvento(idEvento));
+        }
+
         // US-03 Mis eventos
         [Authorize(Roles = Roles.Organizador)]
         [HttpGet("mis-eventos")]

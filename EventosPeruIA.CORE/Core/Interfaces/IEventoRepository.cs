@@ -16,5 +16,9 @@ namespace EventosPeruIA.CORE.Core.Interfaces
         Task<int> ContarEntradasUsuario(int idEvento, int idUsuario);
         Task RegistrarVisita(int idEvento, int idUsuario);
         Task<bool> DescontarCupos(int idEvento, int cantidad);
+        Task<bool> UsuarioHaCompradoEntrada(int idUsuario, int idEvento);
+        Task<bool> UsuarioYaDejoResena(int idUsuario, int idEvento);
+        Task CrearResena(Resena resena);
+        Task<ResumenResenasEventoDTO> ObtenerResenasEvento(int idEvento);
     }
 }

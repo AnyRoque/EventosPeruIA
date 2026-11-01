@@ -12,5 +12,7 @@ namespace EventosPeruIA.CORE.Core.Interfaces
         Task<ResultadoDTO<EventoDetalleDTO>> UpdateEvento(int idOrganizador, int idEvento, EventoUpdateDTO dto);
         Task<ResultadoDTO<EventoDetalleDTO>> PublicarEvento(int idOrganizador, int idEvento);
         Task<ResultadoDTO<object>> DeleteEvento(int idOrganizador, int idEvento);
+        Task<ResultadoDTO<bool>> RegistrarResena(int idUsuario, int idEvento, CrearResenaDTO dto);
+        Task<ResultadoDTO<ResumenResenasEventoDTO>> ObtenerResenasEvento(int idEvento);
     }
 }
