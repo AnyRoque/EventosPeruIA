@@ -135,19 +135,18 @@ namespace EventosPeruIA.CORE.Infrastructure.Repositories
             await _dbContext.SaveChangesAsync();
         }
 
-        // Control de aforo (US-06 / US-10): descuenta los cupos en una sola operación
-        // en la base de datos, solo si todavía alcanzan. Si dos personas compran los
-        // últimos cupos al mismo tiempo, solo una lo logra (devuelve true).
         public async Task<bool> DescontarCupos(int idEvento, int cantidad)
         {
-            var ahora = DateTime.Now;
-            var filas = await _dbContext.Evento
+            int filasAfectadas = await _dbContext.Evento
                 .Where(e => e.IdEvento == idEvento
-                         && e.Estado == EstadosEvento.Publicado
-                         && e.FechaHoraInicio > ahora
-                         && e.EntradasVendidas + cantidad <= e.AforoMaximo)
-                .ExecuteUpdateAsync(s => s.SetProperty(e => e.EntradasVendidas, e => e.EntradasVendidas + cantidad));
-            return filas == 1;
+                         && (e.AforoMaximo - e.EntradasVendidas) >= cantidad
+                         && e.Estado == EstadosEvento.Publicado)
+                .ExecuteUpdateAsync(s => s.SetProperty(
+                    e => e.EntradasVendidas,
+                    e => e.EntradasVendidas + cantidad
+                ));
+
+            return filasAfectadas > 0;
         }
     }
 }
