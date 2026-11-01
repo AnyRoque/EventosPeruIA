@@ -135,6 +135,106 @@ namespace EventosPeruIA.CORE.Infrastructure.Repositories
             await _dbContext.SaveChangesAsync();
         }
 
+        public async Task<ReporteOrganizadorDTO> ObtenerReporteGeneralOrganizador(int idOrganizador)
+        {
+            var eventos = await _dbContext.Evento
+                .Include(e => e.DetalleCompra)
+                    .ThenInclude(d => d.Compra)
+                .Where(e => e.IdOrganizador == idOrganizador)
+                .ToListAsync();
+
+            var resumenes = eventos.Select(e => new ReporteEventoResumenDTO
+            {
+                IdEvento = e.IdEvento,
+                Nombre = e.Nombre,
+                FechaHoraInicio = e.FechaHoraInicio,
+                Estado = e.Estado,
+                AforoMaximo = e.AforoMaximo,
+                EntradasVendidas = e.EntradasVendidas,
+                TotalRecaudado = e.DetalleCompra
+                    .Where(d => d.Compra.Estado == EstadosCompra.Pagada)
+                    .Sum(d => d.Subtotal)
+            }).ToList();
+
+            int totalAsistencias = await _dbContext.CheckIn
+                .Include(c => c.Entrada)
+                    .ThenInclude(en => en.DetalleCompra)
+                        .ThenInclude(d => d.Evento)
+                .Where(c => c.Entrada.DetalleCompra.Evento.IdOrganizador == idOrganizador)
+                .CountAsync();
+
+            int totalVendidas = resumenes.Sum(r => r.EntradasVendidas);
+            decimal pctGlobal = totalVendidas > 0
+                ? Math.Round((decimal)totalAsistencias * 100 / totalVendidas, 1)
+                : 0;
+
+            return new ReporteOrganizadorDTO
+            {
+                TotalRecaudado = resumenes.Sum(e => e.TotalRecaudado),
+                TotalEntradasVendidas = totalVendidas,
+                TotalEventosPublicados = resumenes.Count(r => r.Estado == EstadosEvento.Publicado),
+                PorcentajeAsistenciaGlobal = pctGlobal,
+                Eventos = resumenes
+            };
+        }
+
+        public async Task<ReporteEventoDetalleDTO?> ObtenerReporteDetalladoEvento(int idOrganizador, int idEvento)
+        {
+            var evento = await _dbContext.Evento
+                .Where(e => e.IdEvento == idEvento && e.IdOrganizador == idOrganizador)
+                .Include(e => e.DetalleCompra)
+                    .ThenInclude(d => d.Compra)
+                        .ThenInclude(c => c.Usuario)
+                .Include(e => e.DetalleCompra)
+                    .ThenInclude(d => d.Entrada)
+                .SingleOrDefaultAsync();
+
+            if (evento == null)
+                return null;
+
+            var detallesPagados = evento.DetalleCompra
+                .Where(d => d.Compra.Estado == EstadosCompra.Pagada);
+
+            var ventas = await _dbContext.DetalleCompra
+                .Include(d => d.Compra)
+                    .ThenInclude(c => c.Usuario)
+                .Where(d => d.IdEvento == idEvento && d.Compra.Estado == EstadosCompra.Pagada)
+                .OrderByDescending(d => d.Compra.FechaCompra)
+                .Select(d => new VentaDetalleDTO
+                {
+                    IdCompra = d.IdCompra,
+                    NumeroCompra = $"EP-{d.IdCompra:D6}",
+                    Comprador = $"{d.Compra.Usuario.Nombre} {d.Compra.Usuario.Apellido}",
+                    CorreoComprador = d.Compra.Usuario.Correo,
+                    CantidadEntradas = d.Cantidad,
+                    TotalPagado = d.Subtotal,
+                    FechaCompra = d.Compra.FechaCompra
+                })
+                .ToListAsync();
+
+            int asistieron = await _dbContext.CheckIn
+                .Include(c => c.Entrada)
+                    .ThenInclude(en => en.DetalleCompra)
+                .Where(c => c.Entrada.DetalleCompra.IdEvento == idEvento)
+                .CountAsync();
+
+            decimal pctAsistencia = evento.EntradasVendidas > 0
+                ? Math.Round((decimal)asistieron * 100 / evento.EntradasVendidas, 1)
+                : 0;
+
+            return new ReporteEventoDetalleDTO
+            {
+                IdEvento = evento.IdEvento,
+                NombreEvento = evento.Nombre,
+                AforoMaximo = evento.AforoMaximo,
+                EntradasVendidas = evento.EntradasVendidas,
+                EntradasAsistieron = asistieron,
+                PorcentajeAsistencia = pctAsistencia,
+                TotalRecaudado = ventas.Sum(v => v.TotalPagado),
+                Ventas = ventas
+            };
+        }
+
         // Control de aforo (US-06 / US-10): descuenta los cupos en una sola operación
         // en la base de datos, solo si todavía alcanzan. Si dos personas compran los
         // últimos cupos al mismo tiempo, solo una lo logra (devuelve true).
