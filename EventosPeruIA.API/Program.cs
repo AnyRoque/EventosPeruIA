@@ -22,6 +22,8 @@ builder.Services.AddTransient<ICategoriaService, CategoriaService>();
 // US-05 / US-09 / US-10 / US-03 Eventos
 builder.Services.AddTransient<IEventoRepository, EventoRepository>();
 builder.Services.AddTransient<IEventoService, EventoService>();
+    // US-12 Reseñas
+    builder.Services.AddTransient<IResenaService, ResenaService>();
 // US-06 Compras
 builder.Services.AddTransient<ICompraRepository, CompraRepository>();
 builder.Services.AddTransient<ICompraService, CompraService>();
