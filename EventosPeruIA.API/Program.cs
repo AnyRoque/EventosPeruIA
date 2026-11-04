@@ -25,6 +25,8 @@ builder.Services.AddTransient<IEventoService, EventoService>();
 // US-06 Compras
 builder.Services.AddTransient<ICompraRepository, CompraRepository>();
 builder.Services.AddTransient<ICompraService, CompraService>();
+// US-11 Reportes del organizador
+builder.Services.AddTransient<IReporteService, ReporteService>();
 // US-07 Check-in
 builder.Services.AddTransient<ICheckInRepository, CheckInRepository>();
 builder.Services.AddTransient<ICheckInService, CheckInService>();
