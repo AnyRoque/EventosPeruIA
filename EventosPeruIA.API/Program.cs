@@ -6,6 +6,8 @@ using EventosPeruIA.CORE.Infrastructure.Data;
 using EventosPeruIA.CORE.Infrastructure.Repositories;
 using EventosPeruIA.CORE.Infrastructure.Shared;
 using EventosPeruIA.API.Workers;
+using Microsoft.Extensions.AI;
+using OllamaSharp;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,6 +34,16 @@ builder.Services.AddTransient<ICheckInService, CheckInService>();
 builder.Services.AddTransient<INotificacionRepository, NotificacionRepository>();
 builder.Services.AddTransient<INotificacionService, NotificacionService>();
 builder.Services.AddHostedService<RecordatorioWorker>();
+
+// US-14 PeruIA: cliente de IA (Gemini u Ollama, se elige en appsettings "AI:Provider")
+// Si no hay clave de Gemini, se usa Ollama: la API arranca igual y PeruIA responde "no disponible"
+var usarGemini = _config["AI:Provider"] == "Gemini" && !string.IsNullOrWhiteSpace(_config["AI:Gemini:ApiKey"]);
+IChatClient chatClient = usarGemini
+    ? new Google.GenAI.Client(apiKey: _config["AI:Gemini:ApiKey"]).AsIChatClient(_config["AI:Gemini:Model"])
+    : new OllamaApiClient(new Uri(_config["AI:Ollama:Endpoint"]!), _config["AI:Ollama:Model"]!);
+builder.Services.AddChatClient(chatClient);
+builder.Services.AddTransient<IPeruIARepository, PeruIARepository>();
+builder.Services.AddTransient<IPeruIAService, PeruIAService>();
 
 // JWT
 builder.Services.AddSharedInfrastructure(_config);
