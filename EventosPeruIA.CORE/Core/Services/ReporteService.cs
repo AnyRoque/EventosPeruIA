@@ -1,215 +1,303 @@
 using ClosedXML.Excel;
 using EventosPeruIA.CORE.Core.DTOs;
+using EventosPeruIA.CORE.Core.Entities;
 using EventosPeruIA.CORE.Core.Interfaces;
 using EventosPeruIA.CORE.Core.Settings;
-using EventosPeruIA.CORE.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
 using QuestPDF.Fluent;
 using QuestPDF.Infrastructure;
 
 namespace EventosPeruIA.CORE.Core.Services;
 
+// US-11 Panel del organizador con reportes de ventas
 public class ReporteService : IReporteService
 {
-    private readonly EventosPeruIAContext _dbContext;
+    public const string SinVentas = "No hay ventas en el periodo seleccionado.";
+    private const string EtiquetaCancelado = "Cancelado / Reembolsado";
 
-    public ReporteService(EventosPeruIAContext dbContext)
+    private readonly IReporteRepository _reporteRepository;
+
+    public ReporteService(IReporteRepository reporteRepository)
     {
-        _dbContext = dbContext;
+        _reporteRepository = reporteRepository;
         QuestPDF.Settings.License = LicenseType.Community;
     }
 
-    public async Task<ResultadoDTO<ReporteResumenDTO>> GenerarReporte(
-        int idOrganizador, FiltroReporteDTO filtro)
+    public async Task<ResultadoDTO<ReporteResumenDTO>> GenerarReporte(int idOrganizador, FiltroReporteDTO filtro)
     {
-        if (filtro.Desde.HasValue && filtro.Hasta.HasValue && filtro.Desde > filtro.Hasta)
-            return ResultadoDTO<ReporteResumenDTO>.Error(400,
-                "La fecha inicial no puede ser posterior a la fecha final.");
+        // Criterio 3: "hasta" no puede ser anterior a "desde"
+        if (filtro.Desde.HasValue && filtro.Hasta.HasValue && filtro.Hasta.Value.Date < filtro.Desde.Value.Date)
+            return ResultadoDTO<ReporteResumenDTO>.Error(400, "La fecha «hasta» no puede ser anterior a la fecha «desde».");
 
-        var queryEventos = _dbContext.Evento
-            .AsNoTracking()
-            .Where(e => e.IdOrganizador == idOrganizador);
+        // Criterio 1: solo sus propios eventos
+        var eventos = (await _reporteRepository.GetEventosOrganizador(idOrganizador, filtro.IdEvento)).ToList();
+        if (filtro.IdEvento.HasValue && eventos.Count == 0)
+            return ResultadoDTO<ReporteResumenDTO>.Error(404, "El evento no existe o no te pertenece.");
 
-        if (filtro.IdEvento.HasValue)
-            queryEventos = queryEventos.Where(e => e.IdEvento == filtro.IdEvento.Value);
+        var ventas = (await _reporteRepository.GetVentas(idOrganizador, filtro)).ToList();
 
-        var eventos = await queryEventos.ToListAsync();
-        if (eventos.Count == 0)
-            return ResultadoDTO<ReporteResumenDTO>.Error(404,
-                "No se encontraron eventos para los filtros seleccionados.");
+        // Criterio 10
+        if (ventas.Count == 0)
+            return ResultadoDTO<ReporteResumenDTO>.Ok(new ReporteResumenDTO { HayVentas = false }, SinVentas);
 
-        var eventoIds = eventos.Select(e => e.IdEvento).ToList();
-        var queryCompras = _dbContext.Compra
-            .AsNoTracking()
-            .Include(c => c.Usuario)
-            .Include(c => c.DetalleCompra)
-                .ThenInclude(d => d.Evento)
-            .Where(c => c.DetalleCompra.Any(d => eventoIds.Contains(d.IdEvento)));
-
-        if (filtro.Desde.HasValue)
-            queryCompras = queryCompras.Where(c => c.FechaCompra >= filtro.Desde.Value.Date);
-
-        if (filtro.Hasta.HasValue)
-        {
-            var hastaExclusivo = filtro.Hasta.Value.Date.AddDays(1);
-            queryCompras = queryCompras.Where(c => c.FechaCompra < hastaExclusivo);
-        }
-
-        var compras = await queryCompras.ToListAsync();
-        if (compras.Count == 0)
-            return ResultadoDTO<ReporteResumenDTO>.Error(404,
-                "No hay ventas en el periodo seleccionado.");
-
-        var ventasValidas = compras.Where(c => c.Estado != EstadosCompra.Rechazada).ToList();
-        var entradasVendidas = ventasValidas
-            .SelectMany(c => c.DetalleCompra)
-            .Where(d => eventoIds.Contains(d.IdEvento))
-            .Sum(d => d.Cantidad);
-        var aforoTotal = eventos.Sum(e => e.AforoMaximo);
-        var montoTotal = compras
-            .Where(c => c.Estado != EstadosCompra.Reembolsada && c.Estado != EstadosCompra.Rechazada)
-            .Sum(c => c.MontoTotal);
-
-        var reportePorDia = compras
-            .GroupBy(c => c.FechaCompra.Date)
-            .Select(g => new ReporteDiaDTO
-            {
-                Fecha = g.Key,
-                EntradasVendidas = g.Where(c => c.Estado != EstadosCompra.Rechazada)
-                    .SelectMany(c => c.DetalleCompra)
-                    .Where(d => eventoIds.Contains(d.IdEvento))
-                    .Sum(d => d.Cantidad),
-                MontoTotal = g.Where(c => c.Estado != EstadosCompra.Reembolsada &&
-                                          c.Estado != EstadosCompra.Rechazada)
-                    .Sum(c => c.MontoTotal)
-            })
-            .OrderBy(d => d.Fecha)
-            .ToList();
-
-        var detalleVentas = compras
-            .Select(c => new ReporteVentaDetalleDTO
-            {
-                IdCompra = c.IdCompra,
-                Evento = string.Join(", ", c.DetalleCompra
-                    .Where(d => eventoIds.Contains(d.IdEvento))
-                    .Select(d => d.Evento.Nombre)
-                    .Distinct()),
-                FechaCompra = c.FechaCompra,
-                Comprador = $"{c.Usuario.Nombre} {c.Usuario.Apellido}".Trim(),
-                CantidadEntradas = c.DetalleCompra
-                    .Where(d => eventoIds.Contains(d.IdEvento))
-                    .Sum(d => d.Cantidad),
-                MontoTotal = c.MontoTotal,
-                Estado = c.Estado == EstadosCompra.Reembolsada || c.Estado == EstadosCompra.Rechazada
-                    ? "Cancelado / Reembolsado"
-                    : c.Estado
-            })
-            .OrderByDescending(v => v.FechaCompra)
-            .ToList();
+        // Criterio 9: lo cancelado / reembolsado se muestra, pero no suma al total recaudado
+        var validas = ventas.Where(SumaAlTotal).ToList();
+        var eventosVigentes = eventos.Where(e => e.Estado != EstadosEvento.Cancelado).ToList();
+        var aforoTotal = eventosVigentes.Sum(e => e.AforoMaximo);
+        var entradasVendidas = validas.Sum(d => d.Cantidad);
 
         var reporte = new ReporteResumenDTO
         {
-            AforoTotal = aforoTotal,
+            HayVentas = true,
+
+            // Criterio 2: tarjetas de resumen
+            TotalRecaudado = validas.Sum(d => d.Subtotal),
             EntradasVendidas = entradasVendidas,
-            PorcentajeAforoOcupado = aforoTotal > 0
-                ? Math.Round((decimal)entradasVendidas / aforoTotal * 100, 2)
-                : 0,
-            MontoTotalRecaudado = montoTotal,
-            VentasPorDia = reportePorDia,
-            DetalleVentas = detalleVentas
+            AforoTotal = aforoTotal,
+            PorcentajeAforoOcupado = Porcentaje(entradasVendidas, aforoTotal),
+            AsistentesIngresaron = validas.SelectMany(d => d.Entrada).Count(en => en.Estado == EstadosEntrada.Utilizada),
+
+            // Criterio 4: ventas por evento
+            VentasPorEvento = eventos.Select(e =>
+            {
+                var delEvento = ventas.Where(d => d.IdEvento == e.IdEvento).ToList();
+                var vendidas = delEvento.Sum(d => d.Cantidad);
+                var cancelado = e.Estado == EstadosEvento.Cancelado;
+                return new ReporteEventoDTO
+                {
+                    IdEvento = e.IdEvento,
+                    Evento = e.Nombre,
+                    Fecha = e.FechaHoraInicio,
+                    Aforo = e.AforoMaximo,
+                    EntradasVendidas = vendidas,
+                    PorcentajeOcupacion = Porcentaje(vendidas, e.AforoMaximo),
+                    MontoRecaudado = delEvento.Sum(d => d.Subtotal),
+                    Estado = cancelado ? EtiquetaCancelado : e.Estado,
+                    SumaAlTotal = !cancelado
+                };
+            }).ToList(),
+
+            // Criterio 5: ventas por fecha (gráfico de barras)
+            VentasPorDia = validas
+                .GroupBy(d => d.Compra.FechaCompra.Date)
+                .OrderBy(g => g.Key)
+                .Select(g => new ReporteDiaDTO
+                {
+                    Fecha = g.Key,
+                    EntradasVendidas = g.Sum(d => d.Cantidad),
+                    Monto = g.Sum(d => d.Subtotal)
+                }).ToList(),
+
+            // Criterio 6: detalle de ventas
+            DetalleVentas = ventas.Select(d => new ReporteVentaDetalleDTO
+            {
+                NumeroCompra = $"EP-{d.IdCompra:D6}",
+                Comprador = $"{d.Compra.Usuario.Nombre} {d.Compra.Usuario.Apellido}",
+                Evento = d.Evento.Nombre,
+                Cantidad = d.Cantidad,
+                Total = d.Subtotal,
+                FechaCompra = d.Compra.FechaCompra,
+                Estado = SumaAlTotal(d) ? d.Compra.Estado : EtiquetaCancelado,
+                SumaAlTotal = SumaAlTotal(d)
+            }).ToList()
         };
 
         return ResultadoDTO<ReporteResumenDTO>.Ok(reporte, "Reporte generado correctamente.");
     }
 
-    public Task<byte[]> ExportarExcel(ReporteResumenDTO reporte)
+    // ===================== Criterio 8: exportar según los filtros aplicados =====================
+
+    public byte[] ExportarExcel(ReporteResumenDTO r)
     {
-        using var workbook = new XLWorkbook();
-        var worksheet = workbook.Worksheets.Add("Reporte de Ventas");
+        using var libro = new XLWorkbook();
 
-        worksheet.Cell(1, 1).Value = "Aforo Total";
-        worksheet.Cell(1, 2).Value = reporte.AforoTotal;
-        worksheet.Cell(2, 1).Value = "Entradas Vendidas";
-        worksheet.Cell(2, 2).Value = reporte.EntradasVendidas;
-        worksheet.Cell(3, 1).Value = "% Aforo Ocupado";
-        worksheet.Cell(3, 2).Value = reporte.PorcentajeAforoOcupado / 100;
-        worksheet.Cell(3, 2).Style.NumberFormat.Format = "0.00%";
-        worksheet.Cell(4, 1).Value = "Monto Recaudado";
-        worksheet.Cell(4, 2).Value = reporte.MontoTotalRecaudado;
-        worksheet.Cell(4, 2).Style.NumberFormat.Format = "S/ #,##0.00";
+        var resumen = libro.Worksheets.Add("Resumen");
+        resumen.Cell(1, 1).Value = "Reporte de ventas - EventosPerúIA";
+        resumen.Cell(1, 1).Style.Font.Bold = true;
+        resumen.Cell(3, 1).Value = "Total recaudado";
+        resumen.Cell(3, 2).Value = r.TotalRecaudado;
+        resumen.Cell(3, 2).Style.NumberFormat.Format = FormatoSoles;
+        resumen.Cell(4, 1).Value = "Entradas vendidas";
+        resumen.Cell(4, 2).Value = r.EntradasVendidas;
+        resumen.Cell(5, 1).Value = "% de aforo ocupado";
+        resumen.Cell(5, 2).Value = r.PorcentajeAforoOcupado / 100;
+        resumen.Cell(5, 2).Style.NumberFormat.Format = "0.00%";
+        resumen.Cell(6, 1).Value = "Asistentes que ingresaron";
+        resumen.Cell(6, 2).Value = r.AsistentesIngresaron;
+        resumen.Columns().AdjustToContents();
 
-        var headers = new[] { "ID Compra", "Evento", "Fecha", "Comprador", "Entradas", "Monto (S/)", "Estado" };
-        for (var i = 0; i < headers.Length; i++)
-            worksheet.Cell(6, i + 1).Value = headers[i];
-
-        var headerRange = worksheet.Range(6, 1, 6, headers.Length);
-        headerRange.Style.Font.Bold = true;
-        headerRange.Style.Fill.BackgroundColor = XLColor.LightBlue;
-
-        var row = 7;
-        foreach (var item in reporte.DetalleVentas)
+        // Por evento
+        var hoja = libro.Worksheets.Add("Por evento");
+        Encabezado(hoja, "Evento", "Fecha", "Aforo", "Entradas vendidas", "% ocupación", "Monto (S/)", "Estado");
+        var fila = 2;
+        foreach (var e in r.VentasPorEvento)
         {
-            worksheet.Cell(row, 1).Value = item.IdCompra;
-            worksheet.Cell(row, 2).Value = item.Evento;
-            worksheet.Cell(row, 3).Value = item.FechaCompra;
-            worksheet.Cell(row, 3).Style.DateFormat.Format = "dd/MM/yyyy HH:mm";
-            worksheet.Cell(row, 4).Value = item.Comprador;
-            worksheet.Cell(row, 5).Value = item.CantidadEntradas;
-            worksheet.Cell(row, 6).Value = item.MontoTotal;
-            worksheet.Cell(row, 6).Style.NumberFormat.Format = "S/ #,##0.00";
-            worksheet.Cell(row, 7).Value = item.Estado;
-            row++;
+            hoja.Cell(fila, 1).Value = e.Evento;
+            hoja.Cell(fila, 2).Value = e.Fecha;
+            hoja.Cell(fila, 2).Style.DateFormat.Format = "dd/MM/yyyy HH:mm";
+            hoja.Cell(fila, 3).Value = e.Aforo;
+            hoja.Cell(fila, 4).Value = e.EntradasVendidas;
+            hoja.Cell(fila, 5).Value = e.PorcentajeOcupacion / 100;
+            hoja.Cell(fila, 5).Style.NumberFormat.Format = "0.00%";
+            hoja.Cell(fila, 6).Value = e.MontoRecaudado;
+            hoja.Cell(fila, 6).Style.NumberFormat.Format = FormatoSoles;
+            hoja.Cell(fila, 7).Value = e.Estado;
+            fila++;
         }
+        hoja.Cell(fila, 1).Value = "TOTAL";
+        hoja.Cell(fila, 3).Value = r.AforoTotal;
+        hoja.Cell(fila, 4).Value = r.EntradasVendidas;
+        hoja.Cell(fila, 5).Value = r.PorcentajeAforoOcupado / 100;
+        hoja.Cell(fila, 5).Style.NumberFormat.Format = "0.00%";
+        hoja.Cell(fila, 6).Value = r.TotalRecaudado;
+        hoja.Cell(fila, 6).Style.NumberFormat.Format = FormatoSoles;
+        hoja.Row(fila).Style.Font.Bold = true;
+        hoja.Columns().AdjustToContents();
 
-        worksheet.Columns().AdjustToContents();
+        // Por fecha
+        hoja = libro.Worksheets.Add("Por fecha");
+        Encabezado(hoja, "Fecha", "Entradas vendidas", "Monto (S/)");
+        fila = 2;
+        foreach (var d in r.VentasPorDia)
+        {
+            hoja.Cell(fila, 1).Value = d.Fecha;
+            hoja.Cell(fila, 1).Style.DateFormat.Format = "dd/MM/yyyy";
+            hoja.Cell(fila, 2).Value = d.EntradasVendidas;
+            hoja.Cell(fila, 3).Value = d.Monto;
+            hoja.Cell(fila, 3).Style.NumberFormat.Format = FormatoSoles;
+            fila++;
+        }
+        hoja.Cell(fila, 1).Value = "TOTAL";
+        hoja.Cell(fila, 2).Value = r.EntradasVendidas;
+        hoja.Cell(fila, 3).Value = r.TotalRecaudado;
+        hoja.Cell(fila, 3).Style.NumberFormat.Format = FormatoSoles;
+        hoja.Row(fila).Style.Font.Bold = true;
+        hoja.Columns().AdjustToContents();
+
+        // Detalle
+        hoja = libro.Worksheets.Add("Detalle de ventas");
+        Encabezado(hoja, "N° de compra", "Comprador", "Evento", "Cantidad", "Total (S/)", "Fecha y hora", "Estado");
+        fila = 2;
+        foreach (var v in r.DetalleVentas)
+        {
+            hoja.Cell(fila, 1).Value = v.NumeroCompra;
+            hoja.Cell(fila, 2).Value = v.Comprador;
+            hoja.Cell(fila, 3).Value = v.Evento;
+            hoja.Cell(fila, 4).Value = v.Cantidad;
+            hoja.Cell(fila, 5).Value = v.Total;
+            hoja.Cell(fila, 5).Style.NumberFormat.Format = FormatoSoles;
+            hoja.Cell(fila, 6).Value = v.FechaCompra;
+            hoja.Cell(fila, 6).Style.DateFormat.Format = "dd/MM/yyyy HH:mm";
+            hoja.Cell(fila, 7).Value = v.Estado;
+            fila++;
+        }
+        hoja.Cell(fila, 1).Value = "TOTAL";
+        hoja.Cell(fila, 4).Value = r.EntradasVendidas;
+        hoja.Cell(fila, 5).Value = r.TotalRecaudado;
+        hoja.Cell(fila, 5).Style.NumberFormat.Format = FormatoSoles;
+        hoja.Row(fila).Style.Font.Bold = true;
+        hoja.Columns().AdjustToContents();
+
         using var stream = new MemoryStream();
-        workbook.SaveAs(stream);
-        return Task.FromResult(stream.ToArray());
+        libro.SaveAs(stream);
+        return stream.ToArray();
     }
 
-    public Task<byte[]> ExportarPdf(ReporteResumenDTO reporte)
+    public byte[] ExportarPdf(ReporteResumenDTO r)
     {
-        var document = Document.Create(container =>
+        var documento = Document.Create(container =>
         {
             container.Page(page =>
             {
                 page.Margin(30);
-                page.Header().Text("Reporte de Ventas y Aforo - EventosPerúIA")
-                    .FontSize(16).SemiBold();
-                page.Content().Column(col =>
+                page.DefaultTextStyle(x => x.FontSize(9));
+                page.Header().Text("Reporte de ventas - EventosPerúIA").FontSize(16).SemiBold();
+
+                page.Content().PaddingVertical(10).Column(col =>
                 {
-                    col.Item().Text($"Aforo ocupado: {reporte.PorcentajeAforoOcupado}% " +
-                        $"({reporte.EntradasVendidas}/{reporte.AforoTotal})");
-                    col.Item().Text($"Recaudación total: S/ {reporte.MontoTotalRecaudado:F2}");
-                    col.Item().PaddingVertical(10);
-                    col.Item().Table(table =>
-                    {
-                        table.ColumnsDefinition(columns =>
+                    col.Spacing(12);
+
+                    col.Item().Text($"Total recaudado: {Soles(r.TotalRecaudado)}   |   Entradas vendidas: {r.EntradasVendidas}   |   " +
+                                    $"Aforo ocupado: {r.PorcentajeAforoOcupado:0.00}%   |   Asistentes que ingresaron: {r.AsistentesIngresaron}");
+
+                    Tabla(col, "Ventas por evento",
+                        new[] { "Evento", "Fecha", "Aforo", "Vendidas", "% ocup.", "Monto", "Estado" },
+                        r.VentasPorEvento.Select(e => new[]
                         {
-                            columns.RelativeColumn(2);
-                            columns.RelativeColumn(2);
-                            columns.RelativeColumn(1);
-                            columns.RelativeColumn(2);
-                        });
-                        table.Header(header =>
+                            e.Evento, e.Fecha.ToString("dd/MM/yyyy"), e.Aforo.ToString(), e.EntradasVendidas.ToString(),
+                            $"{e.PorcentajeOcupacion:0.00}%", Soles(e.MontoRecaudado), e.Estado
+                        }),
+                        new[] { "TOTAL", "", r.AforoTotal.ToString(), r.EntradasVendidas.ToString(),
+                                $"{r.PorcentajeAforoOcupado:0.00}%", Soles(r.TotalRecaudado), "" });
+
+                    Tabla(col, "Ventas por fecha",
+                        new[] { "Fecha", "Entradas vendidas", "Monto" },
+                        r.VentasPorDia.Select(d => new[] { d.Fecha.ToString("dd/MM/yyyy"), d.EntradasVendidas.ToString(), Soles(d.Monto) }),
+                        new[] { "TOTAL", r.EntradasVendidas.ToString(), Soles(r.TotalRecaudado) });
+
+                    Tabla(col, "Detalle de ventas",
+                        new[] { "N° compra", "Comprador", "Evento", "Cant.", "Total", "Fecha y hora", "Estado" },
+                        r.DetalleVentas.Select(v => new[]
                         {
-                            header.Cell().Text("Evento").Bold();
-                            header.Cell().Text("Comprador").Bold();
-                            header.Cell().Text("Monto").Bold();
-                            header.Cell().Text("Estado").Bold();
-                        });
-                        foreach (var item in reporte.DetalleVentas)
-                        {
-                            table.Cell().Text(item.Evento);
-                            table.Cell().Text(item.Comprador);
-                            table.Cell().Text($"S/ {item.MontoTotal:F2}");
-                            table.Cell().Text(item.Estado);
-                        }
-                    });
+                            v.NumeroCompra, v.Comprador, v.Evento, v.Cantidad.ToString(), Soles(v.Total),
+                            v.FechaCompra.ToString("dd/MM/yyyy HH:mm"), v.Estado
+                        }),
+                        new[] { "TOTAL", "", "", r.EntradasVendidas.ToString(), Soles(r.TotalRecaudado), "", "" });
                 });
+
+                page.Footer().AlignCenter().Text($"Generado el {DateTime.Now:dd/MM/yyyy HH:mm}");
             });
         });
 
-        return Task.FromResult(document.GeneratePdf());
+        return documento.GeneratePdf();
     }
+
+    // ===================== Métodos de apoyo =====================
+
+    private const string FormatoSoles = "\"S/\" #,##0.00";
+
+    private static bool SumaAlTotal(DetalleCompra d) =>
+        d.Compra.Estado == EstadosCompra.Pagada && d.Evento.Estado != EstadosEvento.Cancelado;
+
+    private static decimal Porcentaje(int parte, int total) =>
+        total > 0 ? Math.Round(parte * 100m / total, 2) : 0;
+
+    private static string Soles(decimal monto) => $"S/ {monto:N2}";
+
+    private static void Encabezado(IXLWorksheet hoja, params string[] titulos)
+    {
+        for (var i = 0; i < titulos.Length; i++)
+            hoja.Cell(1, i + 1).Value = titulos[i];
+
+        var rango = hoja.Range(1, 1, 1, titulos.Length);
+        rango.Style.Font.Bold = true;
+        rango.Style.Fill.BackgroundColor = XLColor.LightBlue;
+    }
+
+    private static void Tabla(ColumnDescriptor col, string titulo, string[] encabezados,
+        IEnumerable<string[]> filas, string[] totales)
+    {
+        col.Item().Text(titulo).FontSize(12).SemiBold();
+        col.Item().Table(table =>
+        {
+            table.ColumnsDefinition(c =>
+            {
+                foreach (var _ in encabezados) c.RelativeColumn();
+            });
+
+            table.Header(h =>
+            {
+                foreach (var e in encabezados)
+                    h.Cell().Element(Celda).Text(e).Bold();
+            });
+
+            foreach (var fila in filas)
+                foreach (var valor in fila)
+                    table.Cell().Element(Celda).Text(valor);
+
+            foreach (var valor in totales)
+                table.Cell().Element(Celda).Text(valor).Bold();
+        });
+    }
+
+    private static IContainer Celda(IContainer c) => c.BorderBottom(0.5f).PaddingVertical(3).PaddingHorizontal(2);
 }

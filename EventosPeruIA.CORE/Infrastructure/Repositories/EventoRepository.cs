@@ -106,22 +106,7 @@ namespace EventosPeruIA.CORE.Infrastructure.Repositories
             return rows > 0;
         }
 
-        public async Task<bool> CancelarEvento(int idEvento, int idOrganizador, string motivo)
-        {
-            var evento = await _dbContext.Evento
-                .FirstOrDefaultAsync(e => e.IdEvento == idEvento && e.IdOrganizador == idOrganizador);
-
-            if (evento == null) return false;
-
-            evento.Estado = EstadosEvento.Cancelado;
-            evento.MotivoCancelacion = motivo;
-            evento.FechaCancelacion = DateTime.Now;
-            evento.FechaModificacion = DateTime.Now;
-
-            await _dbContext.SaveChangesAsync();
-            return true;
-        }
-
+        // US-04 Resumen para la ventana de cancelación (solo compras pagadas)
         public async Task<ResumenCancelacionDTO?> ObtenerResumenCancelacion(int idEvento, int idOrganizador)
         {
             var evento = await _dbContext.Evento
@@ -134,7 +119,7 @@ namespace EventosPeruIA.CORE.Infrastructure.Repositories
             if (evento == null) return null;
 
             var detallesValidos = evento.DetalleCompra
-                .Where(d => d.Compra.Estado != "Cancelada" && d.Compra.Estado != EstadosCompra.Reembolsada)
+                .Where(d => d.Compra.Estado == EstadosCompra.Pagada)
                 .ToList();
             var comprasValidas = detallesValidos.Select(d => d.Compra).DistinctBy(c => c.IdCompra).ToList();
 
@@ -148,6 +133,7 @@ namespace EventosPeruIA.CORE.Infrastructure.Repositories
             };
         }
 
+        // US-04 Cancela, anula entradas y reembolsa en una sola transacción
         public async Task<(int CompradoresNotificados, decimal MontoDevuelto)> CancelarEventoConTransaccion(
             int idEvento, int idOrganizador, string motivo)
         {
@@ -170,7 +156,7 @@ namespace EventosPeruIA.CORE.Infrastructure.Repositories
                 evento.FechaModificacion = DateTime.Now;
 
                 var detallesValidos = evento.DetalleCompra
-                    .Where(d => d.Compra.Estado != "Cancelada" && d.Compra.Estado != EstadosCompra.Reembolsada)
+                    .Where(d => d.Compra.Estado == EstadosCompra.Pagada)
                     .ToList();
                 var comprasValidas = detallesValidos.Select(d => d.Compra).DistinctBy(c => c.IdCompra).ToList();
                 var compradoresNotificados = comprasValidas.Select(c => c.IdUsuario).Distinct().Count();
@@ -215,55 +201,6 @@ namespace EventosPeruIA.CORE.Infrastructure.Repositories
                                && en.Estado != EstadosEntrada.Anulada);
         }
 
-        public async Task<bool> UsuarioHaCompradoEntrada(int idUsuario, int idEvento)
-        {
-            return await _dbContext.DetalleCompra
-                .Include(d => d.Compra)
-                .AnyAsync(d => d.IdEvento == idEvento
-                            && d.Compra.IdUsuario == idUsuario
-                            && d.Compra.Estado == EstadosCompra.Pagada);
-        }
-
-        public async Task<bool> UsuarioYaDejoResena(int idUsuario, int idEvento)
-        {
-            return await _dbContext.Resena
-                .AnyAsync(r => r.IdUsuario == idUsuario && r.IdEvento == idEvento);
-        }
-
-        public async Task CrearResena(Resena resena)
-        {
-            await _dbContext.Resena.AddAsync(resena);
-            await _dbContext.SaveChangesAsync();
-        }
-
-        public async Task<ResumenResenasEventoDTO> ObtenerResenasEvento(int idEvento)
-        {
-            var resenas = await _dbContext.Resena
-                .Include(r => r.Usuario)
-                .Where(r => r.IdEvento == idEvento)
-                .OrderByDescending(r => r.FechaPublicacion)
-                .Select(r => new ResenaDTO
-                {
-                    IdResena = r.IdResena,
-                    NombreUsuario = $"{r.Usuario.Nombre} {r.Usuario.Apellido}",
-                    Calificacion = r.Calificacion,
-                    Comentario = r.Comentario,
-                    FechaCreacion = r.FechaPublicacion
-                })
-                .ToListAsync();
-
-            double promedio = resenas.Any()
-                ? Math.Round(resenas.Average(r => r.Calificacion), 1)
-                : 0;
-
-            return new ResumenResenasEventoDTO
-            {
-                PromedioCalificacion = promedio,
-                TotalResenas = resenas.Count,
-                Resenas = resenas
-            };
-        }
-
         public async Task RegistrarVisita(int idEvento, int idUsuario)
         {
             await _dbContext.EventoVisita.AddAsync(new EventoVisita
@@ -273,106 +210,6 @@ namespace EventosPeruIA.CORE.Infrastructure.Repositories
                 FechaVisita = DateTime.Now
             });
             await _dbContext.SaveChangesAsync();
-        }
-
-        public async Task<ReporteOrganizadorDTO> ObtenerReporteGeneralOrganizador(int idOrganizador)
-        {
-            var eventos = await _dbContext.Evento
-                .Include(e => e.DetalleCompra)
-                    .ThenInclude(d => d.Compra)
-                .Where(e => e.IdOrganizador == idOrganizador)
-                .ToListAsync();
-
-            var resumenes = eventos.Select(e => new ReporteEventoResumenDTO
-            {
-                IdEvento = e.IdEvento,
-                Nombre = e.Nombre,
-                FechaHoraInicio = e.FechaHoraInicio,
-                Estado = e.Estado,
-                AforoMaximo = e.AforoMaximo,
-                EntradasVendidas = e.EntradasVendidas,
-                TotalRecaudado = e.DetalleCompra
-                    .Where(d => d.Compra.Estado == EstadosCompra.Pagada)
-                    .Sum(d => d.Subtotal)
-            }).ToList();
-
-            int totalAsistencias = await _dbContext.CheckIn
-                .Include(c => c.Entrada)
-                    .ThenInclude(en => en.DetalleCompra)
-                        .ThenInclude(d => d.Evento)
-                .Where(c => c.Entrada.DetalleCompra.Evento.IdOrganizador == idOrganizador)
-                .CountAsync();
-
-            int totalVendidas = resumenes.Sum(r => r.EntradasVendidas);
-            decimal pctGlobal = totalVendidas > 0
-                ? Math.Round((decimal)totalAsistencias * 100 / totalVendidas, 1)
-                : 0;
-
-            return new ReporteOrganizadorDTO
-            {
-                TotalRecaudado = resumenes.Sum(e => e.TotalRecaudado),
-                TotalEntradasVendidas = totalVendidas,
-                TotalEventosPublicados = resumenes.Count(r => r.Estado == EstadosEvento.Publicado),
-                PorcentajeAsistenciaGlobal = pctGlobal,
-                Eventos = resumenes
-            };
-        }
-
-        public async Task<ReporteEventoDetalleDTO?> ObtenerReporteDetalladoEvento(int idOrganizador, int idEvento)
-        {
-            var evento = await _dbContext.Evento
-                .Where(e => e.IdEvento == idEvento && e.IdOrganizador == idOrganizador)
-                .Include(e => e.DetalleCompra)
-                    .ThenInclude(d => d.Compra)
-                        .ThenInclude(c => c.Usuario)
-                .Include(e => e.DetalleCompra)
-                    .ThenInclude(d => d.Entrada)
-                .SingleOrDefaultAsync();
-
-            if (evento == null)
-                return null;
-
-            var detallesPagados = evento.DetalleCompra
-                .Where(d => d.Compra.Estado == EstadosCompra.Pagada);
-
-            var ventas = await _dbContext.DetalleCompra
-                .Include(d => d.Compra)
-                    .ThenInclude(c => c.Usuario)
-                .Where(d => d.IdEvento == idEvento && d.Compra.Estado == EstadosCompra.Pagada)
-                .OrderByDescending(d => d.Compra.FechaCompra)
-                .Select(d => new VentaDetalleDTO
-                {
-                    IdCompra = d.IdCompra,
-                    NumeroCompra = $"EP-{d.IdCompra:D6}",
-                    Comprador = $"{d.Compra.Usuario.Nombre} {d.Compra.Usuario.Apellido}",
-                    CorreoComprador = d.Compra.Usuario.Correo,
-                    CantidadEntradas = d.Cantidad,
-                    TotalPagado = d.Subtotal,
-                    FechaCompra = d.Compra.FechaCompra
-                })
-                .ToListAsync();
-
-            int asistieron = await _dbContext.CheckIn
-                .Include(c => c.Entrada)
-                    .ThenInclude(en => en.DetalleCompra)
-                .Where(c => c.Entrada.DetalleCompra.IdEvento == idEvento)
-                .CountAsync();
-
-            decimal pctAsistencia = evento.EntradasVendidas > 0
-                ? Math.Round((decimal)asistieron * 100 / evento.EntradasVendidas, 1)
-                : 0;
-
-            return new ReporteEventoDetalleDTO
-            {
-                IdEvento = evento.IdEvento,
-                NombreEvento = evento.Nombre,
-                AforoMaximo = evento.AforoMaximo,
-                EntradasVendidas = evento.EntradasVendidas,
-                EntradasAsistieron = asistieron,
-                PorcentajeAsistencia = pctAsistencia,
-                TotalRecaudado = ventas.Sum(v => v.TotalPagado),
-                Ventas = ventas
-            };
         }
 
         // Control de aforo (US-06 / US-10): descuenta los cupos en una sola operación

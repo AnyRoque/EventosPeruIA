@@ -38,20 +38,6 @@ namespace EventosPeruIA.API.Controllers
             return Responder(await _eventoService.GetDisponibilidad(id));
         }
 
-        [HttpPost("{idEvento}/resenas")]
-        [Authorize]
-        public async Task<IActionResult> RegistrarResena(int idEvento, [FromBody] CrearResenaDTO dto)
-        {
-            return Responder(await _eventoService.RegistrarResena(UsuarioIdActual!.Value, idEvento, dto));
-        }
-
-        [HttpGet("{idEvento}/resenas")]
-        [AllowAnonymous]
-        public async Task<IActionResult> ObtenerResenas(int idEvento)
-        {
-            return Responder(await _eventoService.ObtenerResenasEvento(idEvento));
-        }
-
         // US-03 Mis eventos
         [Authorize(Roles = Roles.Organizador)]
         [HttpGet("mis-eventos")]
@@ -59,22 +45,6 @@ namespace EventosPeruIA.API.Controllers
         {
             var eventos = await _eventoService.GetMisEventos(UsuarioIdActual!.Value);
             return Ok(eventos);
-        }
-
-        [HttpGet("reporte-organizador")]
-        [Authorize]
-        public async Task<IActionResult> GetReporteOrganizador()
-        {
-            var resultado = await _eventoService.GetReporteOrganizador(UsuarioIdActual!.Value);
-            return Responder(resultado);
-        }
-
-        [HttpGet("{idEvento}/reporte")]
-        [Authorize]
-        public async Task<IActionResult> GetReporteEvento(int idEvento)
-        {
-            var resultado = await _eventoService.GetReporteEvento(UsuarioIdActual!.Value, idEvento);
-            return Responder(resultado);
         }
 
         // US-03 Crear evento (publicar = true) o guardar borrador (publicar = false)
@@ -101,6 +71,7 @@ namespace EventosPeruIA.API.Controllers
             return Responder(await _eventoService.PublicarEvento(UsuarioIdActual!.Value, id));
         }
 
+        // US-04 Datos de la ventana de cancelación: entradas vendidas y monto a devolver
         [Authorize(Roles = Roles.Organizador)]
         [HttpGet("{idEvento}/resumen-cancelacion")]
         public async Task<IActionResult> ObtenerResumenCancelacion(int idEvento)
@@ -109,6 +80,7 @@ namespace EventosPeruIA.API.Controllers
             return Responder(resultado);
         }
 
+        // US-04 Cancelar evento: anula entradas, reembolsa y notifica a los compradores
         [Authorize(Roles = Roles.Organizador)]
         [HttpPost("{idEvento}/cancelar")]
         public async Task<IActionResult> CancelarEvento(int idEvento, [FromBody] CancelarEventoDTO dto)

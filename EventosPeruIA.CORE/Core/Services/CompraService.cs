@@ -260,7 +260,8 @@ namespace EventosPeruIA.CORE.Core.Services
                 NumeroCompra = NumeroCompra(compra.IdCompra),
                 PrecioPagado = detalle.PrecioUnitario,
                 EventoCancelado = evento?.Estado == EstadosEvento.Cancelado,
-                MotivoCancelacion = evento?.MotivoCancelacion
+                MotivoCancelacion = evento?.MotivoCancelacion,
+                MontoDevuelto = compra.Estado == EstadosCompra.Reembolsada ? detalle.PrecioUnitario : null
             };
         }
     }

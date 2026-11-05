@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace EventosPeruIA.API.Controllers;
 
+// US-11 Panel del organizador con reportes de ventas (solo ve sus propios eventos)
+// GET api/Reporte?idEvento=1&desde=2026-10-01&hasta=2026-10-31
 [Route("api/[controller]")]
 [Authorize(Roles = Roles.Organizador)]
 public class ReporteController : BaseApiController
@@ -27,23 +29,30 @@ public class ReporteController : BaseApiController
     public async Task<IActionResult> ExportarExcel([FromQuery] FiltroReporteDTO filtro)
     {
         var resultado = await _reporteService.GenerarReporte(UsuarioIdActual!.Value, filtro);
-        if (!resultado.Exito || resultado.Datos is null)
-            return Responder(resultado);
+        if (!resultado.Exito || resultado.Datos is null || !resultado.Datos.HayVentas)
+            return SinArchivo(resultado);
 
-        var archivo = await _reporteService.ExportarExcel(resultado.Datos);
-        return File(archivo,
+        return File(_reporteService.ExportarExcel(resultado.Datos),
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            "ReporteVentas.xlsx");
+            $"ReporteVentas_{DateTime.Now:yyyyMMdd}.xlsx");
     }
 
     [HttpGet("exportar/pdf")]
     public async Task<IActionResult> ExportarPdf([FromQuery] FiltroReporteDTO filtro)
     {
         var resultado = await _reporteService.GenerarReporte(UsuarioIdActual!.Value, filtro);
-        if (!resultado.Exito || resultado.Datos is null)
-            return Responder(resultado);
+        if (!resultado.Exito || resultado.Datos is null || !resultado.Datos.HayVentas)
+            return SinArchivo(resultado);
 
-        var archivo = await _reporteService.ExportarPdf(resultado.Datos);
-        return File(archivo, "application/pdf", "ReporteVentas.pdf");
+        return File(_reporteService.ExportarPdf(resultado.Datos), "application/pdf",
+            $"ReporteVentas_{DateTime.Now:yyyyMMdd}.pdf");
+    }
+
+    // Sin ventas no hay nada que exportar (en el frontend los botones están deshabilitados)
+    private IActionResult SinArchivo(ResultadoDTO<ReporteResumenDTO> resultado)
+    {
+        return resultado.Exito
+            ? StatusCode(404, new { mensaje = resultado.Mensaje, datos = (object?)null })
+            : Responder(resultado);
     }
 }

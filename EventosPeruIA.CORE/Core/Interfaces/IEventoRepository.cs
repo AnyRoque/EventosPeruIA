@@ -12,14 +12,12 @@ namespace EventosPeruIA.CORE.Core.Interfaces
         Task<bool> CreateEvento(Evento evento);
         Task<bool> UpdateEvento(Evento evento);
         Task<bool> DeleteEvento(Evento evento);
-        Task<bool> CancelarEvento(int idEvento, int idOrganizador, string motivo);
+        // US-04 Cancelación
         Task<ResumenCancelacionDTO?> ObtenerResumenCancelacion(int idEvento, int idOrganizador);
         Task<(int CompradoresNotificados, decimal MontoDevuelto)> CancelarEventoConTransaccion(int idEvento, int idOrganizador, string motivo);
         Task<int> ContarCompradores(int idEvento);
         Task<int> ContarEntradasUsuario(int idEvento, int idUsuario);
         Task RegistrarVisita(int idEvento, int idUsuario);
         Task<bool> DescontarCupos(int idEvento, int cantidad);
-        Task<ReporteOrganizadorDTO> ObtenerReporteGeneralOrganizador(int idOrganizador);
-        Task<ReporteEventoDetalleDTO?> ObtenerReporteDetalladoEvento(int idOrganizador, int idEvento);
     }
 }

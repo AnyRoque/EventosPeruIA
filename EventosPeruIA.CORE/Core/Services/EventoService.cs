@@ -131,46 +131,6 @@ namespace EventosPeruIA.CORE.Core.Services
             });
         }
 
-        public async Task<ResultadoDTO<bool>> RegistrarResena(int idUsuario, int idEvento, CrearResenaDTO dto)
-        {
-            if (dto.Calificacion < 1 || dto.Calificacion > 5)
-                return ResultadoDTO<bool>.Error(400, "La calificación debe estar entre 1 y 5 estrellas.");
-
-            var evento = await _eventoRepository.GetEventoById(idEvento);
-            if (evento == null)
-                return ResultadoDTO<bool>.Error(404, "El evento especificado no existe.");
-
-            if (evento.FechaHoraFin > DateTime.Now)
-                return ResultadoDTO<bool>.Error(400, "Solo puedes dejar una reseña una vez que el evento haya finalizado.");
-
-            bool comproEntrada = await _eventoRepository.UsuarioHaCompradoEntrada(idUsuario, idEvento);
-            if (!comproEntrada)
-                return ResultadoDTO<bool>.Error(403, "Solo los asistentes que compraron entrada pueden calificar este evento.");
-
-            bool yaReseno = await _eventoRepository.UsuarioYaDejoResena(idUsuario, idEvento);
-            if (yaReseno)
-                return ResultadoDTO<bool>.Error(400, "Ya has registrado una reseña para este evento.");
-
-            var resena = new Resena
-            {
-                IdEvento = idEvento,
-                IdUsuario = idUsuario,
-                Calificacion = (byte)dto.Calificacion,
-                Comentario = dto.Comentario ?? string.Empty,
-                Visible = true,
-                FechaPublicacion = DateTime.Now
-            };
-
-            await _eventoRepository.CrearResena(resena);
-            return ResultadoDTO<bool>.Ok(true, "Reseña registrada con éxito.");
-        }
-
-        public async Task<ResultadoDTO<ResumenResenasEventoDTO>> ObtenerResenasEvento(int idEvento)
-        {
-            var resultado = await _eventoRepository.ObtenerResenasEvento(idEvento);
-            return ResultadoDTO<ResumenResenasEventoDTO>.Ok(resultado);
-        }
-
         // ===================== US-03 Publicación y edición =====================
         public async Task<IEnumerable<MiEventoDTO>> GetMisEventos(int idOrganizador)
         {
@@ -273,6 +233,7 @@ namespace EventosPeruIA.CORE.Core.Services
             return ResultadoDTO<EventoDetalleDTO>.Ok(MapearDetalle(actualizado!), "Evento actualizado correctamente.");
         }
 
+        // ===================== US-04 Cancelación =====================
         public async Task<ResultadoDTO<ResumenCancelacionDTO>> ObtenerResumenCancelacion(int idOrganizador, int idEvento)
         {
             var evento = await _eventoRepository.GetEventoById(idEvento);
@@ -344,20 +305,6 @@ namespace EventosPeruIA.CORE.Core.Services
 
             await _eventoRepository.DeleteEvento(evento);
             return ResultadoDTO<object>.Ok(null, "Borrador eliminado.");
-        }
-
-        public async Task<ResultadoDTO<ReporteOrganizadorDTO>> GetReporteOrganizador(int idOrganizador)
-        {
-            var reporte = await _eventoRepository.ObtenerReporteGeneralOrganizador(idOrganizador);
-            return ResultadoDTO<ReporteOrganizadorDTO>.Ok(reporte);
-        }
-
-        public async Task<ResultadoDTO<ReporteEventoDetalleDTO>> GetReporteEvento(int idOrganizador, int idEvento)
-        {
-            var reporte = await _eventoRepository.ObtenerReporteDetalladoEvento(idOrganizador, idEvento);
-            return reporte == null
-                ? ResultadoDTO<ReporteEventoDetalleDTO>.Error(404, "Evento no encontrado o no pertenece a tu cuenta.")
-                : ResultadoDTO<ReporteEventoDetalleDTO>.Ok(reporte);
         }
 
         // ===================== Métodos de apoyo =====================
