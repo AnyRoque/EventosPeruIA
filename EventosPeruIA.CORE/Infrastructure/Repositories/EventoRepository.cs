@@ -215,6 +215,55 @@ namespace EventosPeruIA.CORE.Infrastructure.Repositories
                                && en.Estado != EstadosEntrada.Anulada);
         }
 
+        public async Task<bool> UsuarioHaCompradoEntrada(int idUsuario, int idEvento)
+        {
+            return await _dbContext.DetalleCompra
+                .Include(d => d.Compra)
+                .AnyAsync(d => d.IdEvento == idEvento
+                            && d.Compra.IdUsuario == idUsuario
+                            && d.Compra.Estado == EstadosCompra.Pagada);
+        }
+
+        public async Task<bool> UsuarioYaDejoResena(int idUsuario, int idEvento)
+        {
+            return await _dbContext.Resena
+                .AnyAsync(r => r.IdUsuario == idUsuario && r.IdEvento == idEvento);
+        }
+
+        public async Task CrearResena(Resena resena)
+        {
+            await _dbContext.Resena.AddAsync(resena);
+            await _dbContext.SaveChangesAsync();
+        }
+
+        public async Task<ResumenResenasEventoDTO> ObtenerResenasEvento(int idEvento)
+        {
+            var resenas = await _dbContext.Resena
+                .Include(r => r.Usuario)
+                .Where(r => r.IdEvento == idEvento)
+                .OrderByDescending(r => r.FechaPublicacion)
+                .Select(r => new ResenaDTO
+                {
+                    IdResena = r.IdResena,
+                    NombreUsuario = $"{r.Usuario.Nombre} {r.Usuario.Apellido}",
+                    Calificacion = r.Calificacion,
+                    Comentario = r.Comentario,
+                    FechaCreacion = r.FechaPublicacion
+                })
+                .ToListAsync();
+
+            double promedio = resenas.Any()
+                ? Math.Round(resenas.Average(r => r.Calificacion), 1)
+                : 0;
+
+            return new ResumenResenasEventoDTO
+            {
+                PromedioCalificacion = promedio,
+                TotalResenas = resenas.Count,
+                Resenas = resenas
+            };
+        }
+
         public async Task RegistrarVisita(int idEvento, int idUsuario)
         {
             await _dbContext.EventoVisita.AddAsync(new EventoVisita
