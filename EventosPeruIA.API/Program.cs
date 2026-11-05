@@ -49,6 +49,10 @@ builder.Services.AddChatClient(chatClient);
 builder.Services.AddTransient<IPeruIARepository, PeruIARepository>();
 builder.Services.AddTransient<IPeruIAService, PeruIAService>();
 
+// US-16 Moderación
+builder.Services.AddTransient<IModeracionRepository, ModeracionRepository>();
+builder.Services.AddTransient<IModeracionService, ModeracionService>();
+
 // JWT
 builder.Services.AddSharedInfrastructure(_config);
 
