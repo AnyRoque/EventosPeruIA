@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using EventosPeruIA.CORE.Core.Interfaces;
 using EventosPeruIA.CORE.Core.Settings;
+using Microsoft.AspNetCore.Http;
 
 namespace EventosPeruIA.CORE.Infrastructure.Shared
 {
@@ -36,6 +37,19 @@ namespace EventosPeruIA.CORE.Infrastructure.Shared
                     ValidIssuer = issuer,
                     ValidAudience = audience,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
+
+
+                };
+
+                // US-16 (criterio 1): mensaje cuando el usuario no tiene el rol necesario
+                o.Events = new JwtBearerEvents
+                {
+                    OnForbidden = async context =>
+                    {
+                        context.Response.StatusCode = 403;
+                        context.Response.ContentType = "application/json; charset=utf-8";
+                        await context.Response.WriteAsync("{\"mensaje\":\"No tienes permiso para acceder a esta sección.\",\"datos\":null}");
+                    }
                 };
             });
         }
