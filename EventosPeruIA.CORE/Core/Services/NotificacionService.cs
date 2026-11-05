@@ -138,6 +138,26 @@ namespace EventosPeruIA.CORE.Core.Services
             await Guardar(avisos);
         }
 
+        // Suspensión de cuenta por el administrador (US-16)
+        public async Task NotificarSuspensionUsuario(int idUsuario, string motivo)
+        {
+            await Guardar(new[]
+            {
+                Nueva(idUsuario, null, "Suspension", "Tu cuenta fue suspendida",
+                    Recortar($"El administrador suspendió tu cuenta. Motivo: {motivo}"))
+            });
+        }
+
+        // Reseña ocultada por el administrador (US-16): avisa al autor
+        public async Task NotificarResenaOculta(int idUsuario, int idEvento, string nombreEvento, string motivo)
+        {
+            await Guardar(new[]
+            {
+                Nueva(idUsuario, idEvento, "Suspension", "Tu reseña fue ocultada",
+                    Recortar($"Tu reseña de «{nombreEvento}» fue ocultada por el administrador. Motivo: {motivo}"))
+            });
+        }
+
         // Recordatorio 24 horas antes del inicio (lo ejecuta RecordatorioWorker cada 15 minutos).
         // Nunca se envía dos veces el mismo recordatorio.
         public async Task<int> EnviarRecordatorios()
