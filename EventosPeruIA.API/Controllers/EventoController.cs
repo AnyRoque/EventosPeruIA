@@ -47,6 +47,22 @@ namespace EventosPeruIA.API.Controllers
             return Ok(eventos);
         }
 
+        [HttpGet("reporte-organizador")]
+        [Authorize]
+        public async Task<IActionResult> GetReporteOrganizador()
+        {
+            var resultado = await _eventoService.GetReporteOrganizador(UsuarioIdActual!.Value);
+            return Responder(resultado);
+        }
+
+        [HttpGet("{idEvento}/reporte")]
+        [Authorize]
+        public async Task<IActionResult> GetReporteEvento(int idEvento)
+        {
+            var resultado = await _eventoService.GetReporteEvento(UsuarioIdActual!.Value, idEvento);
+            return Responder(resultado);
+        }
+
         // US-03 Crear evento (publicar = true) o guardar borrador (publicar = false)
         [Authorize(Roles = Roles.Organizador)]
         [HttpPost]

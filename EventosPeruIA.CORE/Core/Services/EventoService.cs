@@ -306,6 +306,20 @@ namespace EventosPeruIA.CORE.Core.Services
             return ResultadoDTO<object>.Ok(null, "Borrador eliminado.");
         }
 
+        public async Task<ResultadoDTO<ReporteOrganizadorDTO>> GetReporteOrganizador(int idOrganizador)
+        {
+            var reporte = await _eventoRepository.ObtenerReporteGeneralOrganizador(idOrganizador);
+            return ResultadoDTO<ReporteOrganizadorDTO>.Ok(reporte);
+        }
+
+        public async Task<ResultadoDTO<ReporteEventoDetalleDTO>> GetReporteEvento(int idOrganizador, int idEvento)
+        {
+            var reporte = await _eventoRepository.ObtenerReporteDetalladoEvento(idOrganizador, idEvento);
+            return reporte == null
+                ? ResultadoDTO<ReporteEventoDetalleDTO>.Error(404, "Evento no encontrado o no pertenece a tu cuenta.")
+                : ResultadoDTO<ReporteEventoDetalleDTO>.Ok(reporte);
+        }
+
         // ===================== Métodos de apoyo =====================
 
         // Validaciones que no cubren los atributos del DTO
