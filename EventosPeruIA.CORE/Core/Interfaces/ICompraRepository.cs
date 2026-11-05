@@ -7,6 +7,7 @@ namespace EventosPeruIA.CORE.Core.Interfaces
         Task<Compra?> GetCompraByCodigoOperacion(Guid codigoOperacion);
         Task<Compra?> GetCompraById(int idCompra);
         Task<IEnumerable<Entrada>> GetEntradasByUsuario(int idUsuario);
+        Task<Entrada?> GetEntradaByUsuario(int idUsuario, int idEntrada);
         Task<bool> CreateCompra(Compra compra);
     }
 }

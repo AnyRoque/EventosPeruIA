@@ -36,5 +36,27 @@ namespace EventosPeruIA.API.Controllers
             var entradas = await _compraService.GetMisEntradas(UsuarioIdActual!.Value);
             return Ok(entradas);
         }
+
+        [HttpGet("entradas/{idEntrada:int}/pdf")]
+        [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+        [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK, "application/pdf")]
+        public async Task<IActionResult> DescargarEntrada(int idEntrada)
+        {
+            if (!UsuarioIdActual.HasValue) return Unauthorized();
+            var resultado = await _compraService.GetEntradaPdf(UsuarioIdActual.Value, idEntrada);
+            if (!resultado.Exito) return Responder(resultado);
+            return File(resultado.Datos!.Contenido, resultado.Datos.TipoContenido, resultado.Datos.Nombre);
+        }
+
+        [HttpGet("{id:int}/pdf")]
+        [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+        [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK, "application/pdf")]
+        public async Task<IActionResult> DescargarCompra(int id)
+        {
+            if (!UsuarioIdActual.HasValue) return Unauthorized();
+            var resultado = await _compraService.GetCompraPdf(UsuarioIdActual.Value, id);
+            if (!resultado.Exito) return Responder(resultado);
+            return File(resultado.Datos!.Contenido, resultado.Datos.TipoContenido, resultado.Datos.Nombre);
+        }
     }
 }
