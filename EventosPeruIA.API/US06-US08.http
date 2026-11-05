@@ -1,0 +1,37 @@
+@host = http://localhost:5166
+@token = PEGA_AQUI_EL_TOKEN_DEL_LOGIN
+@idEntrada = 1
+@idCompra = 1
+
+### Catálogo de intereses
+GET {{host}}/api/Recomendacion/intereses
+Authorization: Bearer {{token}}
+
+### Intereses del usuario actual
+GET {{host}}/api/Recomendacion/mis-intereses
+Authorization: Bearer {{token}}
+
+### Guardar intereses (entre 1 y 5 IDs activos y distintos)
+PUT {{host}}/api/Recomendacion/mis-intereses
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "idIntereses": [1, 2]
+}
+
+### Recomendaciones actualizadas
+GET {{host}}/api/Recomendacion
+Authorization: Bearer {{token}}
+
+### Mis entradas: usar idEntrada para descargar
+GET {{host}}/api/Compra/mis-entradas
+Authorization: Bearer {{token}}
+
+### PDF individual (respuesta binaria)
+GET {{host}}/api/Compra/entradas/{{idEntrada}}/pdf
+Authorization: Bearer {{token}}
+
+### PDF de todas las entradas de una compra
+GET {{host}}/api/Compra/{{idCompra}}/pdf
+Authorization: Bearer {{token}}

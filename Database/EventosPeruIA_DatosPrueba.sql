@@ -136,6 +136,17 @@ FROM Entrada e
 INNER JOIN DetalleCompra d ON d.IdDetalleCompra = e.IdDetalleCompra
 WHERE d.IdEvento = 5 AND e.Estado = 'Utilizada';
 
+-- Evento 9 ya realizado (30/10): María (compra 11) ingresó con sus 5 entradas, así puede dejar su reseña (US-12)
+UPDATE e SET Estado = 'Utilizada'
+FROM Entrada e INNER JOIN DetalleCompra d ON d.IdDetalleCompra = e.IdDetalleCompra
+WHERE d.IdCompra = 11;
+
+INSERT INTO CheckIn (IdEntrada, IdUsuarioValidador, FechaHora)
+SELECT e.IdEntrada, 2, DATEADD(MINUTE, e.NumeroEntrada * 2, '2026-10-30 18:40')
+FROM Entrada e
+INNER JOIN DetalleCompra d ON d.IdDetalleCompra = e.IdDetalleCompra
+WHERE d.IdCompra = 11;
+
 /* ============ ENTRADAS VENDIDAS (cupos) según las entradas válidas o usadas ============ */
 UPDATE ev SET EntradasVendidas = ISNULL(x.Total, 0)
 FROM Evento ev

@@ -71,6 +71,24 @@ namespace EventosPeruIA.API.Controllers
             return Responder(await _eventoService.PublicarEvento(UsuarioIdActual!.Value, id));
         }
 
+        // US-04 Datos de la ventana de cancelación: entradas vendidas y monto a devolver
+        [Authorize(Roles = Roles.Organizador)]
+        [HttpGet("{idEvento}/resumen-cancelacion")]
+        public async Task<IActionResult> ObtenerResumenCancelacion(int idEvento)
+        {
+            var resultado = await _eventoService.ObtenerResumenCancelacion(UsuarioIdActual!.Value, idEvento);
+            return Responder(resultado);
+        }
+
+        // US-04 Cancelar evento: anula entradas, reembolsa y notifica a los compradores
+        [Authorize(Roles = Roles.Organizador)]
+        [HttpPost("{idEvento}/cancelar")]
+        public async Task<IActionResult> CancelarEvento(int idEvento, [FromBody] CancelarEventoDTO dto)
+        {
+            var resultado = await _eventoService.CancelarEvento(UsuarioIdActual!.Value, idEvento, dto);
+            return Responder(resultado);
+        }
+
         // US-03 Eliminar un borrador
         [Authorize(Roles = Roles.Organizador)]
         [HttpDelete("{id}")]

@@ -11,6 +11,9 @@ using OllamaSharp;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Proyecto académico: licencia Community de QuestPDF.
+QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+
 var _config = builder.Configuration;
 var cnx = _config.GetConnectionString("DevConnection");
 builder.Services.AddDbContext<EventosPeruIAContext>(options => options.UseSqlServer(cnx));
@@ -27,9 +30,19 @@ builder.Services.AddTransient<IEventoService, EventoService>();
 // US-06 Compras
 builder.Services.AddTransient<ICompraRepository, CompraRepository>();
 builder.Services.AddTransient<ICompraService, CompraService>();
+builder.Services.AddTransient<IEntradaPdfService, EntradaPdfService>();
+// US-08 Intereses y recomendaciones personalizadas
+builder.Services.AddTransient<IRecomendacionRepository, RecomendacionRepository>();
+builder.Services.AddTransient<IRecomendacionService, RecomendacionService>();
 // US-07 Check-in
 builder.Services.AddTransient<ICheckInRepository, CheckInRepository>();
 builder.Services.AddTransient<ICheckInService, CheckInService>();
+// US-11 Reportes del organizador
+builder.Services.AddTransient<IReporteRepository, ReporteRepository>();
+builder.Services.AddTransient<IReporteService, ReporteService>();
+// US-12 Reseñas
+builder.Services.AddTransient<IResenaRepository, ResenaRepository>();
+builder.Services.AddTransient<IResenaService, ResenaService>();
 // US-15 Notificaciones (+ recordatorio automático 24 h antes)
 builder.Services.AddTransient<INotificacionRepository, NotificacionRepository>();
 builder.Services.AddTransient<INotificacionService, NotificacionService>();
@@ -58,6 +71,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("Frontend", policy =>
         policy.WithOrigins(_config["FrontendUrl"] ?? "http://localhost:9000")
               .AllowAnyHeader()
+              .WithExposedHeaders("Content-Disposition")
               .AllowAnyMethod());
 });
 

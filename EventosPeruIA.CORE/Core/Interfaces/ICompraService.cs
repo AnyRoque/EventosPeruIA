@@ -7,5 +7,7 @@ namespace EventosPeruIA.CORE.Core.Interfaces
         Task<ResultadoDTO<CompraResultadoDTO>> ComprarEntradas(int idUsuario, CompraCreateDTO dto);
         Task<ResultadoDTO<CompraResultadoDTO>> GetCompra(int idUsuario, int idCompra);
         Task<IEnumerable<EntradaDTO>> GetMisEntradas(int idUsuario);
+        Task<ResultadoDTO<ArchivoDTO>> GetEntradaPdf(int idUsuario, int idEntrada);
+        Task<ResultadoDTO<ArchivoDTO>> GetCompraPdf(int idUsuario, int idCompra);
     }
 }

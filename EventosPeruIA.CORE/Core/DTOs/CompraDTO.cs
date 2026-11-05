@@ -61,5 +61,6 @@ namespace EventosPeruIA.CORE.Core.DTOs
         public decimal PrecioPagado { get; set; }
         public bool EventoCancelado { get; set; }
         public string? MotivoCancelacion { get; set; }
+        public decimal? MontoDevuelto { get; set; }   // US-04: monto reembolsado por esta entrada
     }
 }
