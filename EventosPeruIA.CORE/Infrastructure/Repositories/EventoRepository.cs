@@ -106,6 +106,97 @@ namespace EventosPeruIA.CORE.Infrastructure.Repositories
             return rows > 0;
         }
 
+        public async Task<bool> CancelarEvento(int idEvento, int idOrganizador, string motivo)
+        {
+            var evento = await _dbContext.Evento
+                .FirstOrDefaultAsync(e => e.IdEvento == idEvento && e.IdOrganizador == idOrganizador);
+
+            if (evento == null) return false;
+
+            evento.Estado = EstadosEvento.Cancelado;
+            evento.MotivoCancelacion = motivo;
+            evento.FechaCancelacion = DateTime.Now;
+            evento.FechaModificacion = DateTime.Now;
+
+            await _dbContext.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<ResumenCancelacionDTO?> ObtenerResumenCancelacion(int idEvento, int idOrganizador)
+        {
+            var evento = await _dbContext.Evento
+                .Include(e => e.DetalleCompra)
+                    .ThenInclude(d => d.Compra)
+                .Include(e => e.DetalleCompra)
+                    .ThenInclude(d => d.Entrada)
+                .FirstOrDefaultAsync(e => e.IdEvento == idEvento && e.IdOrganizador == idOrganizador);
+
+            if (evento == null) return null;
+
+            var detallesValidos = evento.DetalleCompra
+                .Where(d => d.Compra.Estado != "Cancelada" && d.Compra.Estado != EstadosCompra.Reembolsada)
+                .ToList();
+            var comprasValidas = detallesValidos.Select(d => d.Compra).DistinctBy(c => c.IdCompra).ToList();
+
+            return new ResumenCancelacionDTO
+            {
+                IdEvento = evento.IdEvento,
+                TituloEvento = evento.Nombre,
+                EntradasVendidas = detallesValidos.Sum(d => d.Entrada.Count),
+                TotalCompradores = comprasValidas.Select(c => c.IdUsuario).Distinct().Count(),
+                MontoADevolver = comprasValidas.Sum(c => c.MontoTotal)
+            };
+        }
+
+        public async Task<(int CompradoresNotificados, decimal MontoDevuelto)> CancelarEventoConTransaccion(
+            int idEvento, int idOrganizador, string motivo)
+        {
+            await using var transaction = await _dbContext.Database.BeginTransactionAsync();
+            try
+            {
+                var evento = await _dbContext.Evento
+                    .Include(e => e.DetalleCompra)
+                        .ThenInclude(d => d.Compra)
+                    .Include(e => e.DetalleCompra)
+                        .ThenInclude(d => d.Entrada)
+                    .FirstOrDefaultAsync(e => e.IdEvento == idEvento && e.IdOrganizador == idOrganizador);
+
+                if (evento == null)
+                    throw new Exception("Evento no encontrado.");
+
+                evento.Estado = EstadosEvento.Cancelado;
+                evento.MotivoCancelacion = motivo;
+                evento.FechaCancelacion = DateTime.Now;
+                evento.FechaModificacion = DateTime.Now;
+
+                var detallesValidos = evento.DetalleCompra
+                    .Where(d => d.Compra.Estado != "Cancelada" && d.Compra.Estado != EstadosCompra.Reembolsada)
+                    .ToList();
+                var comprasValidas = detallesValidos.Select(d => d.Compra).DistinctBy(c => c.IdCompra).ToList();
+                var compradoresNotificados = comprasValidas.Select(c => c.IdUsuario).Distinct().Count();
+                var totalDevuelto = comprasValidas.Sum(c => c.MontoTotal);
+
+                foreach (var compra in comprasValidas)
+                {
+                    compra.Estado = EstadosCompra.Reembolsada;
+                    compra.FechaReembolso = DateTime.Now;
+                }
+
+                foreach (var entrada in detallesValidos.SelectMany(d => d.Entrada))
+                    entrada.Estado = EstadosEntrada.Anulada;
+
+                await _dbContext.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return (compradoresNotificados, totalDevuelto);
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
         // Compradores con entradas vigentes (para avisar cambios)
         public async Task<int> ContarCompradores(int idEvento)
         {
