@@ -40,6 +40,18 @@ namespace EventosPeruIA.CORE.Infrastructure.Repositories
                 .ToListAsync();
         }
 
+        // La propiedad se filtra en la consulta: otro usuario recibe el mismo 404 que un Id inexistente.
+        public async Task<Entrada?> GetEntradaByUsuario(int idUsuario, int idEntrada)
+        {
+            return await _dbContext.Entrada.AsNoTracking()
+                .Include(en => en.DetalleCompra).ThenInclude(d => d.Evento)
+                .Include(en => en.DetalleCompra).ThenInclude(d => d.Compra).ThenInclude(c => c.Usuario)
+                .FirstOrDefaultAsync(en => en.IdEntrada == idEntrada
+                    && en.DetalleCompra.Compra.IdUsuario == idUsuario
+                    && (en.DetalleCompra.Compra.Estado == EstadosCompra.Pagada
+                        || en.DetalleCompra.Compra.Estado == EstadosCompra.Reembolsada));
+        }
+
         // Guarda la compra con su detalle y sus entradas en un solo SaveChanges
         public async Task<bool> CreateCompra(Compra compra)
         {
