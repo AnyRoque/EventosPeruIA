@@ -106,6 +106,83 @@ namespace EventosPeruIA.CORE.Infrastructure.Repositories
             return rows > 0;
         }
 
+        // US-04 Resumen para la ventana de cancelación (solo compras pagadas)
+        public async Task<ResumenCancelacionDTO?> ObtenerResumenCancelacion(int idEvento, int idOrganizador)
+        {
+            var evento = await _dbContext.Evento
+                .Include(e => e.DetalleCompra)
+                    .ThenInclude(d => d.Compra)
+                .Include(e => e.DetalleCompra)
+                    .ThenInclude(d => d.Entrada)
+                .FirstOrDefaultAsync(e => e.IdEvento == idEvento && e.IdOrganizador == idOrganizador);
+
+            if (evento == null) return null;
+
+            var detallesValidos = evento.DetalleCompra
+                .Where(d => d.Compra.Estado == EstadosCompra.Pagada)
+                .ToList();
+            var comprasValidas = detallesValidos.Select(d => d.Compra).DistinctBy(c => c.IdCompra).ToList();
+
+            return new ResumenCancelacionDTO
+            {
+                IdEvento = evento.IdEvento,
+                TituloEvento = evento.Nombre,
+                EntradasVendidas = detallesValidos.Sum(d => d.Entrada.Count),
+                TotalCompradores = comprasValidas.Select(c => c.IdUsuario).Distinct().Count(),
+                MontoADevolver = comprasValidas.Sum(c => c.MontoTotal)
+            };
+        }
+
+        // US-04 Cancela, anula entradas y reembolsa en una sola transacción
+        public async Task<(int CompradoresNotificados, decimal MontoDevuelto)> CancelarEventoConTransaccion(
+            int idEvento, int idOrganizador, string motivo)
+        {
+            await using var transaction = await _dbContext.Database.BeginTransactionAsync();
+            try
+            {
+                var evento = await _dbContext.Evento
+                    .Include(e => e.DetalleCompra)
+                        .ThenInclude(d => d.Compra)
+                    .Include(e => e.DetalleCompra)
+                        .ThenInclude(d => d.Entrada)
+                    .FirstOrDefaultAsync(e => e.IdEvento == idEvento && e.IdOrganizador == idOrganizador);
+
+                if (evento == null)
+                    throw new Exception("Evento no encontrado.");
+
+                evento.Estado = EstadosEvento.Cancelado;
+                evento.MotivoCancelacion = motivo;
+                evento.FechaCancelacion = DateTime.Now;
+                evento.FechaModificacion = DateTime.Now;
+
+                var detallesValidos = evento.DetalleCompra
+                    .Where(d => d.Compra.Estado == EstadosCompra.Pagada)
+                    .ToList();
+                var comprasValidas = detallesValidos.Select(d => d.Compra).DistinctBy(c => c.IdCompra).ToList();
+                var compradoresNotificados = comprasValidas.Select(c => c.IdUsuario).Distinct().Count();
+                var totalDevuelto = comprasValidas.Sum(c => c.MontoTotal);
+
+                foreach (var compra in comprasValidas)
+                {
+                    compra.Estado = EstadosCompra.Reembolsada;
+                    compra.FechaReembolso = DateTime.Now;
+                }
+
+                foreach (var entrada in detallesValidos.SelectMany(d => d.Entrada))
+                    entrada.Estado = EstadosEntrada.Anulada;
+
+                await _dbContext.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return (compradoresNotificados, totalDevuelto);
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
         // Compradores con entradas vigentes (para avisar cambios)
         public async Task<int> ContarCompradores(int idEvento)
         {
@@ -122,55 +199,6 @@ namespace EventosPeruIA.CORE.Infrastructure.Repositories
                 .CountAsync(en => en.DetalleCompra.IdEvento == idEvento
                                && en.DetalleCompra.Compra.IdUsuario == idUsuario
                                && en.Estado != EstadosEntrada.Anulada);
-        }
-
-        public async Task<bool> UsuarioHaCompradoEntrada(int idUsuario, int idEvento)
-        {
-            return await _dbContext.DetalleCompra
-                .Include(d => d.Compra)
-                .AnyAsync(d => d.IdEvento == idEvento
-                            && d.Compra.IdUsuario == idUsuario
-                            && d.Compra.Estado == EstadosCompra.Pagada);
-        }
-
-        public async Task<bool> UsuarioYaDejoResena(int idUsuario, int idEvento)
-        {
-            return await _dbContext.Resena
-                .AnyAsync(r => r.IdUsuario == idUsuario && r.IdEvento == idEvento);
-        }
-
-        public async Task CrearResena(Resena resena)
-        {
-            await _dbContext.Resena.AddAsync(resena);
-            await _dbContext.SaveChangesAsync();
-        }
-
-        public async Task<ResumenResenasEventoDTO> ObtenerResenasEvento(int idEvento)
-        {
-            var resenas = await _dbContext.Resena
-                .Include(r => r.Usuario)
-                .Where(r => r.IdEvento == idEvento)
-                .OrderByDescending(r => r.FechaPublicacion)
-                .Select(r => new ResenaDTO
-                {
-                    IdResena = r.IdResena,
-                    NombreUsuario = $"{r.Usuario.Nombre} {r.Usuario.Apellido}",
-                    Calificacion = r.Calificacion,
-                    Comentario = r.Comentario,
-                    FechaCreacion = r.FechaPublicacion
-                })
-                .ToListAsync();
-
-            double promedio = resenas.Any()
-                ? Math.Round(resenas.Average(r => r.Calificacion), 1)
-                : 0;
-
-            return new ResumenResenasEventoDTO
-            {
-                PromedioCalificacion = promedio,
-                TotalResenas = resenas.Count,
-                Resenas = resenas
-            };
         }
 
         public async Task RegistrarVisita(int idEvento, int idUsuario)

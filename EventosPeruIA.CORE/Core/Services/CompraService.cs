@@ -14,14 +14,17 @@ namespace EventosPeruIA.CORE.Core.Services
         private readonly IEventoRepository _eventoRepository;
         private readonly EventosPeruIAContext _dbContext;
         private readonly INotificacionService _notificacionService;
+        private readonly IEntradaPdfService _entradaPdfService;
 
         public CompraService(ICompraRepository compraRepository, IEventoRepository eventoRepository,
-                             EventosPeruIAContext dbContext, INotificacionService notificacionService)
+                             EventosPeruIAContext dbContext, INotificacionService notificacionService,
+                             IEntradaPdfService entradaPdfService)
         {
             _compraRepository = compraRepository;
             _eventoRepository = eventoRepository;
             _dbContext = dbContext;
             _notificacionService = notificacionService;
+            _entradaPdfService = entradaPdfService;
         }
 
         public async Task<ResultadoDTO<CompraResultadoDTO>> ComprarEntradas(int idUsuario, CompraCreateDTO dto)
@@ -153,6 +156,39 @@ namespace EventosPeruIA.CORE.Core.Services
             return entradas.Select(en => MapearEntrada(en, en.DetalleCompra, en.DetalleCompra.Compra));
         }
 
+        public async Task<ResultadoDTO<ArchivoDTO>> GetEntradaPdf(int idUsuario, int idEntrada)
+        {
+            var entrada = await _compraRepository.GetEntradaByUsuario(idUsuario, idEntrada);
+            if (entrada == null)
+                return ResultadoDTO<ArchivoDTO>.Error(404, "Entrada no encontrada.");
+
+            var dto = MapearEntrada(entrada, entrada.DetalleCompra, entrada.DetalleCompra.Compra);
+            return ResultadoDTO<ArchivoDTO>.Ok(new ArchivoDTO
+            {
+                Nombre = $"entrada-{dto.NumeroCompra}-{dto.NumeroEntrada:D2}.pdf",
+                Contenido = _entradaPdfService.GenerarPdf(new[] { dto })
+            });
+        }
+
+        public async Task<ResultadoDTO<ArchivoDTO>> GetCompraPdf(int idUsuario, int idCompra)
+        {
+            var compra = await _compraRepository.GetCompraById(idCompra);
+            if (compra == null || compra.IdUsuario != idUsuario)
+                return ResultadoDTO<ArchivoDTO>.Error(404, "Compra no encontrada.");
+            if ((compra.Estado != EstadosCompra.Pagada && compra.Estado != EstadosCompra.Reembolsada)
+                || !compra.DetalleCompra.Any(d => d.Entrada.Any()))
+                return ResultadoDTO<ArchivoDTO>.Error(409, "Esta compra no tiene entradas para descargar.");
+
+            var entradas = compra.DetalleCompra.OrderBy(d => d.IdDetalleCompra)
+                .SelectMany(d => d.Entrada.OrderBy(en => en.NumeroEntrada)
+                    .Select(en => MapearEntrada(en, d, compra))).ToList();
+            return ResultadoDTO<ArchivoDTO>.Ok(new ArchivoDTO
+            {
+                Nombre = $"entradas-{NumeroCompra(compra.IdCompra)}.pdf",
+                Contenido = _entradaPdfService.GenerarPdf(entradas)
+            });
+        }
+
         // ===================== Métodos de apoyo =====================
 
         private static ResultadoDTO<CompraResultadoDTO> RespuestaCompraPrevia(Compra previa, int idUsuario)
@@ -224,7 +260,8 @@ namespace EventosPeruIA.CORE.Core.Services
                 NumeroCompra = NumeroCompra(compra.IdCompra),
                 PrecioPagado = detalle.PrecioUnitario,
                 EventoCancelado = evento?.Estado == EstadosEvento.Cancelado,
-                MotivoCancelacion = evento?.MotivoCancelacion
+                MotivoCancelacion = evento?.MotivoCancelacion,
+                MontoDevuelto = compra.Estado == EstadosCompra.Reembolsada ? detalle.PrecioUnitario : null
             };
         }
     }

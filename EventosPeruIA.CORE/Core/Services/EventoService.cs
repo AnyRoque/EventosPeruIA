@@ -131,46 +131,6 @@ namespace EventosPeruIA.CORE.Core.Services
             });
         }
 
-        public async Task<ResultadoDTO<bool>> RegistrarResena(int idUsuario, int idEvento, CrearResenaDTO dto)
-        {
-            if (dto.Calificacion < 1 || dto.Calificacion > 5)
-                return ResultadoDTO<bool>.Error(400, "La calificación debe estar entre 1 y 5 estrellas.");
-
-            var evento = await _eventoRepository.GetEventoById(idEvento);
-            if (evento == null)
-                return ResultadoDTO<bool>.Error(404, "El evento especificado no existe.");
-
-            if (evento.FechaHoraFin > DateTime.Now)
-                return ResultadoDTO<bool>.Error(400, "Solo puedes dejar una reseña una vez que el evento haya finalizado.");
-
-            bool comproEntrada = await _eventoRepository.UsuarioHaCompradoEntrada(idUsuario, idEvento);
-            if (!comproEntrada)
-                return ResultadoDTO<bool>.Error(403, "Solo los asistentes que compraron entrada pueden calificar este evento.");
-
-            bool yaReseno = await _eventoRepository.UsuarioYaDejoResena(idUsuario, idEvento);
-            if (yaReseno)
-                return ResultadoDTO<bool>.Error(400, "Ya has registrado una reseña para este evento.");
-
-            var resena = new Resena
-            {
-                IdEvento = idEvento,
-                IdUsuario = idUsuario,
-                Calificacion = (byte)dto.Calificacion,
-                Comentario = dto.Comentario ?? string.Empty,
-                Visible = true,
-                FechaPublicacion = DateTime.Now
-            };
-
-            await _eventoRepository.CrearResena(resena);
-            return ResultadoDTO<bool>.Ok(true, "Reseña registrada con éxito.");
-        }
-
-        public async Task<ResultadoDTO<ResumenResenasEventoDTO>> ObtenerResenasEvento(int idEvento)
-        {
-            var resultado = await _eventoRepository.ObtenerResenasEvento(idEvento);
-            return ResultadoDTO<ResumenResenasEventoDTO>.Ok(resultado);
-        }
-
         // ===================== US-03 Publicación y edición =====================
         public async Task<IEnumerable<MiEventoDTO>> GetMisEventos(int idOrganizador)
         {
@@ -271,6 +231,47 @@ namespace EventosPeruIA.CORE.Core.Services
 
             var actualizado = await _eventoRepository.GetEventoById(idEvento);
             return ResultadoDTO<EventoDetalleDTO>.Ok(MapearDetalle(actualizado!), "Evento actualizado correctamente.");
+        }
+
+        // ===================== US-04 Cancelación =====================
+        public async Task<ResultadoDTO<ResumenCancelacionDTO>> ObtenerResumenCancelacion(int idOrganizador, int idEvento)
+        {
+            var evento = await _eventoRepository.GetEventoById(idEvento);
+            if (evento == null)
+                return ResultadoDTO<ResumenCancelacionDTO>.Error(404, "El evento no existe.");
+            if (evento.IdOrganizador != idOrganizador)
+                return ResultadoDTO<ResumenCancelacionDTO>.Error(403, "No tienes permisos para ver el resumen de este evento.");
+
+            var resumen = await _eventoRepository.ObtenerResumenCancelacion(idEvento, idOrganizador);
+            return resumen == null
+                ? ResultadoDTO<ResumenCancelacionDTO>.Error(404, "No se pudo generar el resumen de cancelación.")
+                : ResultadoDTO<ResumenCancelacionDTO>.Ok(resumen, "Resumen obtenido exitosamente.");
+        }
+
+        public async Task<ResultadoDTO<bool>> CancelarEvento(int idOrganizador, int idEvento, CancelarEventoDTO dto)
+        {
+            if (dto == null || string.IsNullOrWhiteSpace(dto.Motivo) || dto.Motivo.Trim().Length < 20 || dto.Motivo.Trim().Length > 500)
+                return ResultadoDTO<bool>.Error(400, "El motivo de cancelación debe tener entre 20 y 500 caracteres.");
+
+            var evento = await _eventoRepository.GetEventoById(idEvento);
+            if (evento == null)
+                return ResultadoDTO<bool>.Error(404, "El evento especificado no existe.");
+
+            if (evento.IdOrganizador != idOrganizador)
+                return ResultadoDTO<bool>.Error(403, "No tienes permisos para cancelar este evento.");
+
+            if (evento.Estado != EstadosEvento.Publicado)
+                return ResultadoDTO<bool>.Error(400, $"No se puede cancelar un evento en estado '{evento.Estado}'. Solo se pueden cancelar eventos Publicados.");
+
+            if (evento.FechaHoraInicio <= DateTime.Now)
+                return ResultadoDTO<bool>.Error(400, "No es posible cancelar un evento que ya ha iniciado o finalizado.");
+
+            var (compradoresNotificados, montoDevuelto) = await _eventoRepository.CancelarEventoConTransaccion(
+                idEvento, idOrganizador, dto.Motivo.Trim());
+            await _notificacionService.NotificarCancelacion(evento);
+
+            return ResultadoDTO<bool>.Ok(true,
+                $"Evento cancelado. Se notificó a {compradoresNotificados} compradores y se devolvió S/ {montoDevuelto:F2}");
         }
 
         public async Task<ResultadoDTO<EventoDetalleDTO>> PublicarEvento(int idOrganizador, int idEvento)
