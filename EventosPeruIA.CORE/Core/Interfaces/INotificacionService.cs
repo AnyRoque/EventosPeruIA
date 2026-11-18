@@ -17,6 +17,9 @@ namespace EventosPeruIA.CORE.Core.Interfaces
         Task NotificarCambioProgramacion(Evento evento, DateTime inicioAnterior, string lugarAnterior);
         Task NotificarCancelacion(Evento evento);                 // US-04 Cancelación
         Task NotificarSuspension(Evento evento, string motivo);   // US-16 Moderación
+
+        Task NotificarSuspensionUsuario(int idUsuario, string motivo);  // US-16
+        Task NotificarResenaOculta(int idUsuario, int idEvento, string nombreEvento, string motivo);    // US-16
         Task<int> EnviarRecordatorios();                          // proceso automático (24 h antes)
     }
 }
