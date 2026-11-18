@@ -9,6 +9,8 @@ using EventosPeruIA.API.Workers;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddHttpClient();
+
 var _config = builder.Configuration;
 var cnx = _config.GetConnectionString("DevConnection");
 builder.Services.AddDbContext<EventosPeruIAContext>(options => options.UseSqlServer(cnx));
@@ -41,10 +43,10 @@ builder.Services.AddSharedInfrastructure(_config);
 // Permite que el frontend (Vue + Quasar) consuma la API
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("Frontend", policy =>
-        policy.WithOrigins(_config["FrontendUrl"] ?? "http://localhost:9000")
-              .AllowAnyHeader()
-              .AllowAnyMethod());
+    options.AddPolicy("AllowFrontend", policy =>
+        policy.WithOrigins("http://localhost:9000", "http://127.0.0.1:9000")
+              .AllowAnyMethod()
+              .AllowAnyHeader());
 });
 
 // Errores de validación con el mismo formato que el resto: { mensaje, errores }
@@ -70,7 +72,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseCors("Frontend");
+app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 
