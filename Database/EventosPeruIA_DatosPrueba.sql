@@ -1,7 +1,8 @@
 /* =====================================================================
    EventosPeruIA - Datos de prueba
    Ejecutar DESPUÉS de EventosPeruIA.sql, con la BD recién creada (vacía).
-   Contraseña de todos los usuarios: Prueba123  (texto plano, igual que en clase)
+   Contraseña de todos los usuarios: Prueba123
+   (guardada con hash BCrypt + salt: cada usuario tiene un hash distinto)
    ===================================================================== */
 USE EventosPeruIA;
 GO
@@ -13,18 +14,16 @@ BEGIN
 END
 GO
 
-DECLARE @hash VARCHAR(255) = 'Prueba123';
-
 /* ============================ USUARIOS ============================ */
 INSERT INTO Usuario (Nombre, Apellido, Correo, Celular, FechaNacimiento, Departamento, Distrito, PasswordHash, NombreOrganizador, Estado, MotivoSuspension, FechaRegistro) VALUES
-('Admin',  'Sistema',  'admin@eventosperu.pe',     '900000001', '1990-01-15', 'Lima',  'San Isidro', @hash, NULL,                         'Activo',     NULL, '2026-08-01'),  -- 1 ADM
-('Carlos', 'Mendoza',  'carlos.mendoza@gmail.com', '987654321', '1988-04-22', 'Lima',  'Barranco',   @hash, 'Lima Live Producciones',     'Activo',     NULL, '2026-08-05'),  -- 2 USU + ORG
-('Lucía',  'Torres',   'lucia.torres@gmail.com',   '976543210', '1993-07-10', 'Lima',  'Miraflores', @hash, 'Talleres Creativos Perú',    'Activo',     NULL, '2026-08-07'),  -- 3 USU + ORG
-('María',  'Quispe',   'maria.quispe@gmail.com',   '965432109', '2000-02-18', 'Lima',  'Miraflores', @hash, NULL,                         'Activo',     NULL, '2026-08-10'),  -- 4 USU
-('José',   'Ramírez',  'jose.ramirez@gmail.com',   '954321098', '1998-11-03', 'Lima',  'Surco',      @hash, NULL,                         'Activo',     NULL, '2026-08-12'),  -- 5 USU
-('Ana',    'Flores',   'ana.flores@gmail.com',     '943210987', '1995-05-27', 'Lima',  'Lince',      @hash, NULL,                         'Activo',     NULL, '2026-08-15'),  -- 6 USU
-('Pedro',  'Salazar',  'pedro.salazar@gmail.com',  '932109876', '1997-09-14', 'Lima',  'Jesús María', @hash, NULL,                        'Suspendido', 'Publicó comentarios ofensivos de forma reiterada.', '2026-08-18'), -- 7 USU suspendido
-('Rosa',   'Huamán',   'rosa.huaman@gmail.com',    '921098765', '1985-12-01', 'Cusco', 'Cusco',      @hash, 'Sabores y Artesanías del Sur','Activo',     NULL, '2026-08-20'); -- 8 USU + ORG
+('Admin',  'Sistema',  'admin@eventosperu.pe',     '900000001', '1990-01-15', 'Lima',  'San Isidro', '$2a$11$F75HyQFDqZ882aRotrlfE.CDWf8ZPrNleghlu/vBPHZH4oyeZqA/u', NULL,                         'Activo',     NULL, '2026-08-01'),  -- 1 ADM
+('Carlos', 'Mendoza',  'carlos.mendoza@gmail.com', '987654321', '1988-04-22', 'Lima',  'Barranco',   '$2a$11$PsrVdZEzPBMgSNWcBmGsVuxfw6u8KrfPwL2DrZImhJX19fJwy.uo6', 'Lima Live Producciones',     'Activo',     NULL, '2026-08-05'),  -- 2 USU + ORG
+('Lucía',  'Torres',   'lucia.torres@gmail.com',   '976543210', '1993-07-10', 'Lima',  'Miraflores', '$2a$11$5fc3W.FqFnot07V0n8vrruHZmYQQFlVTKBDehdrR6UgZfXZMBPHG6', 'Talleres Creativos Perú',    'Activo',     NULL, '2026-08-07'),  -- 3 USU + ORG
+('María',  'Quispe',   'maria.quispe@gmail.com',   '965432109', '2000-02-18', 'Lima',  'Miraflores', '$2a$11$mD5mHhUPZcXe7PFyHjUOPOTpRMQu/OkLNV2XDCyXDm8Yfnr16Jdzy', NULL,                         'Activo',     NULL, '2026-08-10'),  -- 4 USU
+('José',   'Ramírez',  'jose.ramirez@gmail.com',   '954321098', '1998-11-03', 'Lima',  'Surco',      '$2a$11$.ya4gisQpwyozoFWbNwHruv4PoVdXjrSscRhHFt9pSyj7SSvfsPba', NULL,                         'Activo',     NULL, '2026-08-12'),  -- 5 USU
+('Ana',    'Flores',   'ana.flores@gmail.com',     '943210987', '1995-05-27', 'Lima',  'Lince',      '$2a$11$c7ZoC7HxFaYzeCuS/1qUu.KXJuHldoIIY7TBULq9L92BMyTPlQc9i', NULL,                         'Activo',     NULL, '2026-08-15'),  -- 6 USU
+('Pedro',  'Salazar',  'pedro.salazar@gmail.com',  '932109876', '1997-09-14', 'Lima',  'Jesús María', '$2a$11$IUMkLghVwvvGfvNsU8fDY.5rRVjYyJKvbgbZAqAdKijSujNdyFHB2', NULL,                        'Suspendido', 'Publicó comentarios ofensivos de forma reiterada.', '2026-08-18'), -- 7 USU suspendido
+('Rosa',   'Huamán',   'rosa.huaman@gmail.com',    '921098765', '1985-12-01', 'Cusco', 'Cusco',      '$2a$11$zznNimawuAoLYwGYWzBtsOEV5lyMcJ8x7D7QEWLzAFhPlfhaIg7yW', 'Sabores y Artesanías del Sur','Activo',     NULL, '2026-08-20'); -- 8 USU + ORG
 
 -- Roles: 1 Asistente, 2 Organizador, 3 Administrador
 INSERT INTO UsuarioRol (IdUsuario, IdRol) VALUES
