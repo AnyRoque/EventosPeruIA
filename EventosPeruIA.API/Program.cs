@@ -11,6 +11,8 @@ using OllamaSharp;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddHttpClient();
+
 // Proyecto académico: licencia Community de QuestPDF.
 QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 
@@ -71,8 +73,10 @@ builder.Services.AddSharedInfrastructure(_config);
 // Permite que el frontend (Vue + Quasar) consuma la API
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("Frontend", policy =>
-        policy.WithOrigins(_config["FrontendUrl"] ?? "http://localhost:9000")
+    options.AddPolicy("AllowFrontend", policy =>
+        policy.WithOrigins(
+                _config["FrontendUrl"] ?? "http://localhost:9000",
+                "http://127.0.0.1:9000")
               .AllowAnyHeader()
               .WithExposedHeaders("Content-Disposition")
               .AllowAnyMethod());
@@ -105,7 +109,7 @@ if (app.Environment.IsDevelopment())
 // Publica wwwroot: las imágenes se ven en http://localhost:5166/imagenes/eventos/<archivo>
 app.UseStaticFiles();
 
-app.UseCors("Frontend");
+app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 

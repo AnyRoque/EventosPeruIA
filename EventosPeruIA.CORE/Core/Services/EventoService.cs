@@ -339,7 +339,6 @@ namespace EventosPeruIA.CORE.Core.Services
             evento.Direccion = dto.Direccion.Trim();
             evento.AforoMaximo = dto.AforoMaximo;
             evento.Precio = dto.Precio;
-            
         }
 
         private static bool PuedeEditarse(Evento e, DateTime ahora) =>

@@ -4,7 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UserSecretsId>11f03d60-b0bf-427a-b541-ea737ec61a7d</UserSecretsId>
+    <UserSecretsId>EventosPeruIA-API-Chatbot</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
