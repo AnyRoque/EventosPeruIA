@@ -115,9 +115,6 @@ namespace EventosPeruIA.CORE.Core.DTOs
         [Range(typeof(decimal), "0", "9999.99", ParseLimitsInInvariantCulture = true, ConvertValueInInvariantCulture = true, ErrorMessage = "El precio debe estar entre S/ 0.00 y S/ 9 999.99.")]
         public decimal Precio { get; set; }
 
-        [StringLength(500)]
-        public string? ImagenUrl { get; set; }
-
         // true = Publicar, false = Guardar como borrador
         public bool Publicar { get; set; }
     }

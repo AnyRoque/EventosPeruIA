@@ -43,7 +43,7 @@ namespace EventosPeruIA.CORE.Core.Services
                     PrecioTexto = TextoPrecio(e.Precio),
                     CuposDisponibles = e.AforoMaximo - e.EntradasVendidas,
                     Agotado = e.EntradasVendidas >= e.AforoMaximo,
-                    ImagenUrl = e.ImagenUrl
+                    ImagenUrl = Imagenes.Ruta(e.ImagenUrl)
                 }).ToList(),
                 Total = total,
                 Pagina = filtro.Pagina,
@@ -339,7 +339,6 @@ namespace EventosPeruIA.CORE.Core.Services
             evento.Direccion = dto.Direccion.Trim();
             evento.AforoMaximo = dto.AforoMaximo;
             evento.Precio = dto.Precio;
-            evento.ImagenUrl = string.IsNullOrWhiteSpace(dto.ImagenUrl) ? null : dto.ImagenUrl.Trim();
         }
 
         private static bool PuedeEditarse(Evento e, DateTime ahora) =>
@@ -366,7 +365,7 @@ namespace EventosPeruIA.CORE.Core.Services
             Departamento = e.Departamento,
             Distrito = e.Distrito,
             Direccion = e.Direccion,
-            ImagenUrl = e.ImagenUrl,
+            ImagenUrl = Imagenes.Ruta(e.ImagenUrl),
             Precio = e.Precio,
             PrecioTexto = TextoPrecio(e.Precio),
             AforoMaximo = e.AforoMaximo,

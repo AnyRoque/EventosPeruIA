@@ -51,7 +51,7 @@ namespace EventosPeruIA.CORE.Core.Services
                 FechaNacimiento = dto.FechaNacimiento.Value,
                 Departamento = dto.Departamento.Trim(),
                 Distrito = dto.Distrito.Trim(),
-                PasswordHash = dto.Password, // Texto plano, según el alcance visto en clase
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password), // Hash con salt: nunca se guarda la contraseña
                 NombreOrganizador = nombreOrganizador,
                 Estado = "Activo",
                 FechaRegistro = DateTime.Now
@@ -73,13 +73,26 @@ namespace EventosPeruIA.CORE.Core.Services
             var usuario = await _usuarioRepository.GetUsuarioByCorreo(dto.Correo.Trim().ToLower());
 
             // Mensaje genérico: no se indica qué dato falló
-            if (usuario == null || usuario.PasswordHash != dto.Password)
+            if (usuario == null || !ContrasenaCorrecta(dto.Password, usuario.PasswordHash))
                 return ResultadoDTO<LoginResponseDTO>.Error(401, "Correo o contraseña incorrectos.");
 
             if (usuario.Estado == "Suspendido")
                 return ResultadoDTO<LoginResponseDTO>.Error(403, "Tu cuenta está suspendida. Comunícate con el administrador.");
 
             return ResultadoDTO<LoginResponseDTO>.Ok(CrearRespuestaLogin(usuario), "Inicio de sesión correcto.");
+        }
+
+        // Compara la contraseña escrita con el hash guardado (BCrypt lee el salt del propio hash)
+        private static bool ContrasenaCorrecta(string password, string passwordHash)
+        {
+            try
+            {
+                return BCrypt.Net.BCrypt.Verify(password, passwordHash);
+            }
+            catch (BCrypt.Net.SaltParseException)
+            {
+                return false;   // el valor guardado no es un hash válido (datos antiguos en texto plano)
+            }
         }
 
         public async Task<ResultadoDTO<PerfilDTO>> GetPerfil(int idUsuario)

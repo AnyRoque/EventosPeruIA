@@ -64,6 +64,9 @@ builder.Services.AddTransient<IPeruIAService, PeruIAService>();
 builder.Services.AddTransient<IModeracionRepository, ModeracionRepository>();
 builder.Services.AddTransient<IModeracionService, ModeracionService>();
 
+// US-03 Imagen de portada del evento
+builder.Services.AddTransient<IImagenService, ImagenService>();
+
 // JWT
 builder.Services.AddSharedInfrastructure(_config);
 
@@ -100,7 +103,11 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+
 }
+
+// Publica wwwroot: las imágenes se ven en http://localhost:5166/imagenes/eventos/<archivo>
+app.UseStaticFiles();
 
 app.UseCors("AllowFrontend");
 app.UseAuthentication();
