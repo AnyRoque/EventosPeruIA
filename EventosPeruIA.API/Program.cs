@@ -55,6 +55,15 @@ IChatClient chatClient = usarGemini
     ? new Google.GenAI.Client(apiKey: _config["AI:Gemini:ApiKey"]).AsIChatClient(_config["AI:Gemini:Model"])
     : new OllamaApiClient(new Uri(_config["AI:Ollama:Endpoint"]!), _config["AI:Ollama:Model"]!);
 builder.Services.AddChatClient(chatClient);
+
+// RAG: generador de embeddings usando el mismo proveedor y configuración
+IEmbeddingGenerator<string, Embedding<float>> embeddingGenerator = usarGemini
+    ? new Google.GenAI.Client(apiKey: _config["AI:Gemini:ApiKey"]!).AsIEmbeddingGenerator(
+        _config["AI:Gemini:EmbeddingModel"] ?? "gemini-embedding-001")
+    : new OllamaApiClient(new Uri(_config["AI:Ollama:Endpoint"]!),
+        _config["AI:Ollama:EmbeddingModel"] ?? _config["AI:Ollama:Model"]!);
+builder.Services.AddEmbeddingGenerator(embeddingGenerator);
+
 builder.Services.AddTransient<IPeruIARepository, PeruIARepository>();
 builder.Services.AddTransient<IPeruIAService, PeruIAService>();
 
