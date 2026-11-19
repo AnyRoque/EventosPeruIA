@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using EventosPeruIA.CORE.Core.DTOs;
 using EventosPeruIA.CORE.Core.Entities;
 using EventosPeruIA.CORE.Core.Interfaces;
+using EventosPeruIA.CORE.Core.Settings;
 
 namespace EventosPeruIA.CORE.Core.Services
 {
@@ -186,7 +187,7 @@ namespace EventosPeruIA.CORE.Core.Services
             PrecioTexto = e.Precio == 0 ? "Gratis" : $"S/ {e.Precio.ToString("0.00", CultureInfo.InvariantCulture)}",
             CuposDisponibles = e.AforoMaximo - e.EntradasVendidas,
             Agotado = false,
-            ImagenUrl = e.ImagenUrl,
+            ImagenUrl = Imagenes.Ruta(e.ImagenUrl),
             Motivo = motivo
         };
     }
